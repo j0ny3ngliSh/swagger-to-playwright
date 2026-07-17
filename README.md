@@ -36,7 +36,13 @@ The output is still plain static files (`npm run build` → `dist/`), deployable
 
 Two layers, both free:
 
-- **Vercel Web Analytics** (`inject()` in `src/main.ts`) — pageviews and unique visitors, enabled in the project's Vercel dashboard. This is the extent of what Vercel's free Hobby plan supports; custom events (e.g. "did they click Copy?") are a Pro-plan-only feature there.
-- **Self-hosted activity counter** (`api/track.ts`, `api/stats.ts`) — a tiny serverless endpoint backed by Upstash Redis (free tier, connected via Vercel's Marketplace integration) that counts three things: a test was generated, the Copy button was clicked, or the output was copied via manual select-all. Check current counts anytime at `/api/stats`.
+- **Vercel Web Analytics** (`inject()` in `src/main.ts`) — pageview/visitor trends in the Vercel dashboard. Custom events (e.g. "did they click Copy?") are a Pro-plan-only feature there, so this layer is trend-watching only, not the funnel below.
+- **Self-hosted funnel counter** (`api/track.ts`, `api/stats.ts`, backed by free-tier Upstash Redis) — tracks a real funnel of unique people, not raw event counts:
+  - **visitors** — anyone who loaded the page (deduped by an anonymous ID in `localStorage`, not an IP or account)
+  - **generated** — unique visitors who generated at least one test
+  - **copied** — unique visitors who copied a test (via the Copy button or manual select-all)
+  - **returned** — unique visitors seen on 2+ distinct calendar days
 
-This exists because pageviews alone don't tell you if the tool is actually useful — only whether someone generated and copied a test does.
+  Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned` readout.
+
+This exists because pageviews alone don't tell you if the tool is actually useful — the funnel does.

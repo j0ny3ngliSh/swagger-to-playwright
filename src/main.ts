@@ -6,13 +6,26 @@ import { generateTest } from "./codegen";
 
 inject();
 
-function logActivity(event: "generated" | "copied", method?: "button" | "selection") {
+const VISITOR_ID_KEY = "spw_visitor_id";
+
+function getVisitorId(): string {
+  let id = localStorage.getItem(VISITOR_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(VISITOR_ID_KEY, id);
+  }
+  return id;
+}
+
+function logActivity(event: "visit" | "generated" | "copied", method?: "button" | "selection") {
   fetch("/api/track", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ event, method }),
+    body: JSON.stringify({ event, visitorId: getVisitorId(), method }),
   }).catch(() => {});
 }
+
+logActivity("visit");
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
