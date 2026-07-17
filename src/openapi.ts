@@ -1,0 +1,77 @@
+import * as yaml from "js-yaml";
+
+export interface OperationInfo {
+  key: string;
+  method: string;
+  path: string;
+  operationId?: string;
+  summary?: string;
+  parameters: any[];
+  requestBody?: any;
+  responses?: any;
+  security?: any[];
+}
+
+const HTTP_METHODS = ["get", "post", "put", "patch", "delete", "head", "options"];
+
+export function parseSpec(raw: string): any {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("{")) {
+    return JSON.parse(raw);
+  }
+  return yaml.load(raw);
+}
+
+export function resolveRef(spec: any, ref: string): any {
+  if (!ref || !ref.startsWith("#/")) return undefined;
+  const parts = ref.slice(2).split("/");
+  let node = spec;
+  for (const part of parts) {
+    if (node == null) return undefined;
+    node = node[part];
+  }
+  return node;
+}
+
+export function resolveSchema(spec: any, schema: any, seen = new Set<string>()): any {
+  if (!schema) return schema;
+  if (schema.$ref) {
+    if (seen.has(schema.$ref)) return {};
+    seen.add(schema.$ref);
+    return resolveSchema(spec, resolveRef(spec, schema.$ref), seen);
+  }
+  return schema;
+}
+
+export function listOperations(spec: any): OperationInfo[] {
+  const ops: OperationInfo[] = [];
+  const paths = spec.paths || {};
+  for (const path of Object.keys(paths)) {
+    const pathItem = paths[path];
+    const pathLevelParams = pathItem.parameters || [];
+    for (const method of HTTP_METHODS) {
+      const op = pathItem[method];
+      if (!op) continue;
+      ops.push({
+        key: `${method.toUpperCase()} ${path}`,
+        method,
+        path,
+        operationId: op.operationId,
+        summary: op.summary,
+        parameters: [...pathLevelParams, ...(op.parameters || [])],
+        requestBody: op.requestBody,
+        responses: op.responses,
+        security: op.security || spec.security,
+      });
+    }
+  }
+  return ops;
+}
+
+export function getBaseUrl(spec: any): string {
+  const servers = spec.servers;
+  if (servers && servers.length > 0 && servers[0].url) {
+    return servers[0].url;
+  }
+  return "";
+}
