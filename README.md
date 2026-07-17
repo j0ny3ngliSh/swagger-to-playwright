@@ -9,10 +9,24 @@ Upload openapi.yaml (or click "Try with sample spec")
       ↓
 Choose endpoint
       ↓
-Generate: describe() / test() / request / assertions / auth placeholder / payload
+Pick output mode: single happy-path test, or Starter Suite
+      ↓
+Generate
       ↓
 Copy → Done
 ```
+
+## Output modes
+
+- **Single test** (`src/codegen.ts`) — one happy-path test: `describe()`/`test()`, request call, assertions, auth placeholder, payload.
+- **Starter suite** (`src/starter-suite.ts`) — a handful of tests per endpoint (happy path + negative cases), all conditionally generated from what the spec actually declares — nothing invented:
+  - Happy path — always, if the operation documents a success response
+  - Not-found / invalid-path-param-format — only if the operation has a path parameter, and only if that parameter's schema actually implies a meaningful format to violate (a type, a `format`, a `pattern`, or an `enum` — not a bare unconstrained string)
+  - Missing required field / wrong data type — only if the request body schema has `required` fields or typed properties to violate
+  - Pagination support / invalid pagination value — only for `GET` list endpoints (no path param) whose query parameters include something that looks like pagination (`page`, `limit`, `offset`, `cursor`, etc.)
+  - Requires authentication — only if the operation's `security` actually requires it
+
+  For any negative case, if the spec documents the expected error status (e.g. a `404` or `400` response), the test asserts it for real. If it doesn't, the generator emits a stub with a comment instead of guessing — it will not fabricate a status code or any other business logic the spec doesn't support.
 
 ## Running locally
 

@@ -3,6 +3,7 @@ import { inject } from "@vercel/analytics";
 import type { OperationInfo } from "./openapi";
 import { parseSpec, listOperations } from "./openapi";
 import { generateTest } from "./codegen";
+import { generateStarterSuite } from "./starter-suite";
 import { SAMPLE_SPEC } from "./sample-spec";
 
 inject();
@@ -40,6 +41,11 @@ app.innerHTML = `
     <div class="card" id="endpoint-card" hidden>
       <label for="endpoint-select">Endpoint</label>
       <select id="endpoint-select"></select>
+
+      <div class="mode-toggle">
+        <label><input type="radio" name="mode" value="single" checked /> Single test (happy path)</label>
+        <label><input type="radio" name="mode" value="suite" /> Starter suite (happy path + negative cases)</label>
+      </div>
     </div>
 
     <div class="card" id="output-card" hidden>
@@ -64,9 +70,14 @@ const outputCard = document.querySelector<HTMLDivElement>("#output-card")!;
 const outputCode = document.querySelector<HTMLPreElement>("#output-code")!;
 const copyBtn = document.querySelector<HTMLButtonElement>("#copy-btn")!;
 const errorBox = document.querySelector<HTMLDivElement>("#error")!;
+const modeInputs = document.querySelectorAll<HTMLInputElement>('input[name="mode"]');
 
 let spec: any = null;
 let operations: OperationInfo[] = [];
+
+function getMode(): "single" | "suite" {
+  return (document.querySelector<HTMLInputElement>('input[name="mode"]:checked')?.value as "single" | "suite") ?? "single";
+}
 
 function showError(message: string) {
   errorBox.textContent = message;
@@ -102,10 +113,13 @@ function populateEndpoints() {
   renderOutput(0);
 }
 
+let currentEndpointIndex = 0;
+
 function renderOutput(index: number) {
+  currentEndpointIndex = index;
   const op = operations[index];
   try {
-    const code = generateTest(spec, op);
+    const code = getMode() === "suite" ? generateStarterSuite(spec, op) : generateTest(spec, op);
     outputCode.textContent = code;
     outputCard.hidden = false;
     logActivity("generated");
@@ -139,6 +153,12 @@ sampleBtn.addEventListener("click", () => {
 
 endpointSelect.addEventListener("change", () => {
   renderOutput(Number(endpointSelect.value));
+});
+
+modeInputs.forEach((input) => {
+  input.addEventListener("change", () => {
+    renderOutput(currentEndpointIndex);
+  });
 });
 
 copyBtn.addEventListener("click", async () => {

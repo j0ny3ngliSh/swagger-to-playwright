@@ -1,7 +1,7 @@
 import type { OperationInfo } from "./openapi";
 import { resolveSchema, getBaseUrl } from "./openapi";
 
-function exampleForSchema(spec: any, schema: any, depth = 0): any {
+export function exampleForSchema(spec: any, schema: any, depth = 0): any {
   const resolved = resolveSchema(spec, schema);
   if (!resolved || depth > 5) return null;
 
@@ -41,12 +41,12 @@ function exampleForSchema(spec: any, schema: any, depth = 0): any {
   }
 }
 
-function paramExample(spec: any, param: any): any {
+export function paramExample(spec: any, param: any): any {
   if (param.example !== undefined) return param.example;
   return exampleForSchema(spec, param.schema);
 }
 
-function buildPath(spec: any, op: OperationInfo): { pathExpr: string; queryParams: any[] } {
+export function buildPath(spec: any, op: OperationInfo): { pathExpr: string; queryParams: any[] } {
   let path = op.path;
   const pathParams = op.parameters.filter((p) => p.in === "path");
   const queryParams = op.parameters.filter((p) => p.in === "query");
@@ -59,7 +59,7 @@ function buildPath(spec: any, op: OperationInfo): { pathExpr: string; queryParam
   return { pathExpr: path, queryParams };
 }
 
-function firstSuccessResponse(op: OperationInfo): { code: string; schema?: any } | undefined {
+export function firstSuccessResponse(op: OperationInfo): { code: string; schema?: any } | undefined {
   const responses = op.responses || {};
   const codes = Object.keys(responses).filter((c) => /^2\d\d$/.test(c));
   if (codes.length === 0) return undefined;
@@ -139,6 +139,6 @@ export function generateTest(spec: any, op: OperationInfo): string {
   return lines.join("\n");
 }
 
-function escape(s: string): string {
+export function escape(s: string): string {
   return s.replace(/'/g, "\\'");
 }

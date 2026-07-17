@@ -111,6 +111,27 @@ select {
   font-size: 0.9rem;
 }
 
+.mode-toggle {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mode-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cfd3da;
+  font-size: 0.85rem;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.mode-toggle input {
+  margin: 0;
+}
+
 .output-header {
   display: flex;
   align-items: center;
