@@ -6,22 +6,11 @@ import { generateTest } from "./codegen";
 
 inject();
 
-const VISITOR_ID_KEY = "spw_visitor_id";
-
-function getVisitorId(): string {
-  let id = localStorage.getItem(VISITOR_ID_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(VISITOR_ID_KEY, id);
-  }
-  return id;
-}
-
 function logActivity(event: "visit" | "generated" | "copied", method?: "button" | "selection") {
   fetch("/api/track", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ event, visitorId: getVisitorId(), method }),
+    body: JSON.stringify({ event, method }),
   }).catch(() => {});
 }
 

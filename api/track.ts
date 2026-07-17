@@ -7,43 +7,52 @@ const redis = new Redis({
 
 const VALID_EVENTS = new Set(["visit", "generated", "copied"]);
 const VALID_METHODS = new Set(["button", "selection"]);
-const MAX_ID_LENGTH = 100;
+
+function getIp(req: Request): string {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "unknown";
+}
+
+// Hashed rather than stored raw, so no actual IP addresses sit in Redis.
+async function hashIp(ip: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  let body: { event?: string; visitorId?: string; method?: string };
+  let body: { event?: string; method?: string };
   try {
     body = await req.json();
   } catch {
     return new Response("Invalid JSON", { status: 400 });
   }
 
-  const { event, visitorId, method } = body;
-
+  const { event, method } = body;
   if (!event || !VALID_EVENTS.has(event)) {
     return new Response("Invalid event", { status: 400 });
   }
-  if (!visitorId || typeof visitorId !== "string" || visitorId.length > MAX_ID_LENGTH) {
-    return new Response("Invalid visitorId", { status: 400 });
-  }
 
-  await redis.sadd("visitors:all", visitorId);
+  const id = await hashIp(getIp(req));
+
+  await redis.sadd("visitors:all", id);
 
   if (event === "visit") {
-    const today = new Date().toISOString().slice(0, 10);
-    await redis.sadd(`visitor-days:${visitorId}`, today);
-    const distinctDays = await redis.scard(`visitor-days:${visitorId}`);
-    if (distinctDays >= 2) {
-      await redis.sadd("visitors:returned", visitorId);
+    const visitCount = await redis.incr(`visitor-visits:${id}`);
+    if (visitCount >= 2) {
+      await redis.sadd("visitors:returned", id);
     }
   } else if (event === "generated") {
-    await redis.sadd("visitors:generated", visitorId);
+    await redis.sadd("visitors:generated", id);
     await redis.incr("activity:generated");
   } else if (event === "copied") {
-    await redis.sadd("visitors:copied", visitorId);
+    await redis.sadd("visitors:copied", id);
     if (method && VALID_METHODS.has(method)) {
       await redis.incr(`activity:copied:${method}`);
     }

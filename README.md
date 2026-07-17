@@ -38,10 +38,10 @@ Two layers, both free:
 
 - **Vercel Web Analytics** (`inject()` in `src/main.ts`) — pageview/visitor trends in the Vercel dashboard. Custom events (e.g. "did they click Copy?") are a Pro-plan-only feature there, so this layer is trend-watching only, not the funnel below.
 - **Self-hosted funnel counter** (`api/track.ts`, `api/stats.ts`, backed by free-tier Upstash Redis) — tracks a real funnel of unique people, not raw event counts:
-  - **visitors** — anyone who loaded the page (deduped by an anonymous ID in `localStorage`, not an IP or account)
-  - **generated** — unique visitors who generated at least one test
+  - **visitors** — anyone who loaded the page, deduped by a SHA-256 hash of their IP (the raw IP is never stored — hashed server-side in `api/track.ts` before touching Redis). Note: this undercounts distinct people behind a shared/NAT'd IP (offices, some mobile carriers) and overcounts people whose IP changes between visits — it's a reasonable proxy, not exact.
+  - **generated** — unique visitors (by that same IP hash) who generated at least one test
   - **copied** — unique visitors who copied a test (via the Copy button or manual select-all)
-  - **returned** — unique visitors seen on 2+ distinct calendar days
+  - **returned** — visitors seen on 2+ separate visits, even within the same day (not gated by calendar day)
 
   Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned` readout.
 
