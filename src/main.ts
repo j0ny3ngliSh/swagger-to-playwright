@@ -2,7 +2,6 @@ import "./style.css";
 import { inject } from "@vercel/analytics";
 import type { OperationInfo } from "./openapi";
 import { parseSpec, listOperations } from "./openapi";
-import { generateTest } from "./codegen";
 import { generateStarterSuite } from "./starter-suite";
 import { SAMPLE_SPEC } from "./sample-spec";
 
@@ -26,7 +25,8 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
   <main class="wrap">
     <h1>OpenAPI → Playwright</h1>
-    <p class="subtitle">Upload a spec, pick an endpoint, get a ready-to-run Playwright test.</p>
+    <p class="tagline">Generate ready-to-run API tests from your OpenAPI specification.</p>
+    <p class="subtitle">Upload your Swagger/OpenAPI file, select an endpoint, and get Playwright tests generated from your API contract.</p>
 
     <div class="card">
       <label class="upload">
@@ -41,11 +41,6 @@ app.innerHTML = `
     <div class="card" id="endpoint-card" hidden>
       <label for="endpoint-select">Endpoint</label>
       <select id="endpoint-select"></select>
-
-      <div class="mode-toggle">
-        <label><input type="radio" name="mode" value="single" checked /> Single test (happy path)</label>
-        <label><input type="radio" name="mode" value="suite" /> Starter suite (contract, validation &amp; auth checks)</label>
-      </div>
     </div>
 
     <div class="card" id="output-card" hidden>
@@ -70,14 +65,9 @@ const outputCard = document.querySelector<HTMLDivElement>("#output-card")!;
 const outputCode = document.querySelector<HTMLPreElement>("#output-code")!;
 const copyBtn = document.querySelector<HTMLButtonElement>("#copy-btn")!;
 const errorBox = document.querySelector<HTMLDivElement>("#error")!;
-const modeInputs = document.querySelectorAll<HTMLInputElement>('input[name="mode"]');
 
 let spec: any = null;
 let operations: OperationInfo[] = [];
-
-function getMode(): "single" | "suite" {
-  return (document.querySelector<HTMLInputElement>('input[name="mode"]:checked')?.value as "single" | "suite") ?? "single";
-}
 
 function showError(message: string) {
   errorBox.textContent = message;
@@ -113,13 +103,10 @@ function populateEndpoints() {
   renderOutput(0);
 }
 
-let currentEndpointIndex = 0;
-
 function renderOutput(index: number) {
-  currentEndpointIndex = index;
   const op = operations[index];
   try {
-    const code = getMode() === "suite" ? generateStarterSuite(spec, op) : generateTest(spec, op);
+    const code = generateStarterSuite(spec, op);
     outputCode.textContent = code;
     outputCard.hidden = false;
     logActivity("generated");
@@ -153,12 +140,6 @@ sampleBtn.addEventListener("click", () => {
 
 endpointSelect.addEventListener("change", () => {
   renderOutput(Number(endpointSelect.value));
-});
-
-modeInputs.forEach((input) => {
-  input.addEventListener("change", () => {
-    renderOutput(currentEndpointIndex);
-  });
 });
 
 copyBtn.addEventListener("click", async () => {

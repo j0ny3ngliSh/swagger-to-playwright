@@ -1,25 +1,22 @@
 # OpenAPI → Playwright
 
-Paste or upload an OpenAPI/Swagger spec, pick an endpoint, get a ready-to-run Playwright test. No accounts, no login, no billing for users. It's a static frontend plus two tiny serverless endpoints used only for activity tracking (see below) — there is no user data, no database of users, nothing to sign up for.
+Generate ready-to-run API tests from your OpenAPI specification. No accounts, no login, no billing for users. It's a static frontend plus two tiny serverless endpoints used only for activity tracking (see below) — there is no user data, no database of users, nothing to sign up for.
 
 ## Flow
 
 ```
-Upload openapi.yaml (or click "Try with sample spec")
+Upload your Swagger/OpenAPI file (or click "Try with sample spec")
       ↓
-Choose endpoint
+Select an endpoint
       ↓
-Pick output mode: single happy-path test, or Starter Suite
-      ↓
-Generate
+Generate a Starter Suite of Playwright tests
       ↓
 Copy → Done
 ```
 
-## Output modes
+## The Starter Suite
 
-- **Single test** (`src/codegen.ts`) — one happy-path test: `describe()`/`test()`, request call, assertions, auth placeholder, payload.
-- **Starter suite** (`src/starter-suite.ts`) — a handful of tests per endpoint, all conditionally generated from what the spec actually declares — nothing invented — grouped into four labeled sections in the output:
+Every generated file is a handful of tests per endpoint (`src/starter-suite.ts`), all conditionally generated from what the spec actually declares — nothing invented — grouped into four labeled sections in the output:
   - **✅ Happy Path** — the success case, always if the operation documents one; plus a "supports the pagination parameter" variant for `GET` list endpoints with a `page`/`limit`/`offset`-like query param
   - **🛡 Contract Validation** — not-found for a bad path parameter, only if the operation has one
   - **⚠ Input Validation** — missing required field, wrong data type, and invalid-enum-value tests, each only generated when the schema actually declares the relevant constraint (a `required` list, a primitive type, or an `enum`) — covers both request body properties and query parameters; wrong-path-param-format is included here too, only when that parameter's schema implies something meaningful to violate (a type, a `format`, a `pattern`, or an `enum` — not a bare unconstrained string)
@@ -40,7 +37,7 @@ The `/api/track` and `/api/stats` endpoints (see below) need `KV_REST_API_URL` /
 
 The core tool is a static, no-framework-needed page by design (the serverless functions in `api/` are add-on activity tracking, not part of the product itself). Vite was chosen anyway for two things a zero-build `<script>` tag setup doesn't give you:
 
-- **Type-checked codegen logic.** The OpenAPI parsing and test-generation code (`src/openapi.ts`, `src/codegen.ts`) is the part most likely to have subtle bugs, so it's worth writing in checked TypeScript rather than plain JS.
+- **Type-checked codegen logic.** The OpenAPI parsing and test-generation code (`src/openapi.ts`, `src/codegen.ts`, `src/starter-suite.ts`) is the part most likely to have subtle bugs, so it's worth writing in checked TypeScript rather than plain JS. Note: `codegen.ts` still exports the original single-happy-path-test generator and its shared helpers (reused by `starter-suite.ts`); the UI no longer offers it as a mode, but it's kept (and still covered by `tests/codegen.test.ts`) rather than deleted, since nothing asked for its removal.
 - **A real npm dependency for YAML.** OpenAPI specs are usually YAML, not JSON, so the tool needs `js-yaml`. Vite lets that be a normal `import` instead of a CDN `<script>` tag or a hand-vendored file.
 
 The output is still plain static files (`npm run build` → `dist/`), deployable anywhere for free — Vercel, Netlify, GitHub Pages, or a plain static host.

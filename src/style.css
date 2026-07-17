@@ -25,6 +25,12 @@ h1 {
   margin: 0 0 4px;
 }
 
+.tagline {
+  color: #cfd3da;
+  font-size: 1.05rem;
+  margin: 0 0 6px;
+}
+
 .subtitle {
   color: #9aa0aa;
   margin: 0 0 28px;
@@ -109,27 +115,6 @@ select {
   border: 1px solid #262b35;
   border-radius: 8px;
   font-size: 0.9rem;
-}
-
-.mode-toggle {
-  margin-top: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.mode-toggle label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #cfd3da;
-  font-size: 0.85rem;
-  margin-bottom: 0;
-  cursor: pointer;
-}
-
-.mode-toggle input {
-  margin: 0;
 }
 
 .output-header {
