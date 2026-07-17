@@ -44,7 +44,7 @@ app.innerHTML = `
 
       <div class="mode-toggle">
         <label><input type="radio" name="mode" value="single" checked /> Single test (happy path)</label>
-        <label><input type="radio" name="mode" value="suite" /> Starter suite (happy path + negative cases)</label>
+        <label><input type="radio" name="mode" value="suite" /> Starter suite (contract, validation &amp; auth checks)</label>
       </div>
     </div>
 
