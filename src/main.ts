@@ -1,10 +1,18 @@
 import "./style.css";
-import { inject, track } from "@vercel/analytics";
+import { inject } from "@vercel/analytics";
 import type { OperationInfo } from "./openapi";
 import { parseSpec, listOperations } from "./openapi";
 import { generateTest } from "./codegen";
 
 inject();
+
+function logActivity(event: "generated" | "copied", method?: "button" | "selection") {
+  fetch("/api/track", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ event, method }),
+  }).catch(() => {});
+}
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -92,6 +100,7 @@ function renderOutput(index: number) {
     const code = generateTest(spec, op);
     outputCode.textContent = code;
     outputCard.hidden = false;
+    logActivity("generated");
   } catch (e: any) {
     showError(`Couldn't generate test: ${e.message ?? e}`);
   }
@@ -120,7 +129,7 @@ endpointSelect.addEventListener("change", () => {
 
 copyBtn.addEventListener("click", async () => {
   await navigator.clipboard.writeText(outputCode.textContent ?? "");
-  track("test_copied", { method: "button" });
+  logActivity("copied", "button");
   const original = copyBtn.textContent;
   copyBtn.textContent = "Copied!";
   window.setTimeout(() => (copyBtn.textContent = original), 1200);
@@ -128,5 +137,5 @@ copyBtn.addEventListener("click", async () => {
 
 // Catches manual select-all + Cmd/Ctrl-C, which doesn't go through the Copy button.
 outputCode.addEventListener("copy", () => {
-  track("test_copied", { method: "selection" });
+  logActivity("copied", "selection");
 });
