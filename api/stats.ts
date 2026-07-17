@@ -6,11 +6,12 @@ const redis = new Redis({
 });
 
 export default async function handler(req: Request): Promise<Response> {
-  const [visitors, generated, copied, returned, copiedButton, copiedSelection] = await Promise.all([
+  const [visitors, generated, copied, returned, triedSample, copiedButton, copiedSelection] = await Promise.all([
     redis.scard("visitors:all"),
     redis.scard("visitors:generated"),
     redis.scard("visitors:copied"),
     redis.scard("visitors:returned"),
+    redis.scard("visitors:tried_sample"),
     redis.get<number>("activity:copied:button"),
     redis.get<number>("activity:copied:selection"),
   ]);
@@ -20,13 +21,14 @@ export default async function handler(req: Request): Promise<Response> {
     generated,
     copied,
     returned,
+    tried_sample: triedSample,
     copied_button_events: copiedButton ?? 0,
     copied_selection_events: copiedSelection ?? 0,
   };
 
   const url = new URL(req.url);
   if (url.searchParams.get("format") === "text") {
-    const text = `${visitors} visitors\n${generated} generated\n${copied} copied\n${returned} returned\n`;
+    const text = `${visitors} visitors\n${generated} generated\n${copied} copied\n${returned} returned\n${triedSample} tried sample\n`;
     return new Response(text, { headers: { "content-type": "text/plain" } });
   }
 

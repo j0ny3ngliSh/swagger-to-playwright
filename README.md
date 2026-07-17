@@ -5,7 +5,7 @@ Paste or upload an OpenAPI/Swagger spec, pick an endpoint, get a ready-to-run Pl
 ## Flow
 
 ```
-Upload openapi.yaml
+Upload openapi.yaml (or click "Try with sample spec")
       ↓
 Choose endpoint
       ↓
@@ -42,7 +42,8 @@ Two layers, both free:
   - **generated** — unique visitors (by that same IP hash) who generated at least one test
   - **copied** — unique visitors who copied a test (via the Copy button or manual select-all)
   - **returned** — visitors seen on 2+ separate visits, even within the same day (not gated by calendar day)
+  - **tried_sample** — unique visitors who clicked "Try with sample spec" (`src/sample-spec.ts`), added to see whether not having a spec handy was the reason visitors weren't generating tests
 
-  Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned` readout.
+  Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned / N tried sample` readout.
 
 This exists because pageviews alone don't tell you if the tool is actually useful — the funnel does.

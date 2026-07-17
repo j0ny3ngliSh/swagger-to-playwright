@@ -3,10 +3,14 @@ import { inject } from "@vercel/analytics";
 import type { OperationInfo } from "./openapi";
 import { parseSpec, listOperations } from "./openapi";
 import { generateTest } from "./codegen";
+import { SAMPLE_SPEC } from "./sample-spec";
 
 inject();
 
-function logActivity(event: "visit" | "generated" | "copied", method?: "button" | "selection") {
+function logActivity(
+  event: "visit" | "generated" | "copied" | "tried_sample",
+  method?: "button" | "selection",
+) {
   fetch("/api/track", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -30,6 +34,7 @@ app.innerHTML = `
       </label>
       <div class="or">or paste it below</div>
       <textarea id="spec-input" placeholder="Paste your OpenAPI/Swagger spec here (YAML or JSON)..."></textarea>
+      <button id="sample-btn" type="button" class="sample-btn">Try with sample spec</button>
     </div>
 
     <div class="card" id="endpoint-card" hidden>
@@ -52,6 +57,7 @@ app.innerHTML = `
 const fileInput = document.querySelector<HTMLInputElement>("#file-input")!;
 const uploadLabel = document.querySelector<HTMLSpanElement>("#upload-label")!;
 const specInput = document.querySelector<HTMLTextAreaElement>("#spec-input")!;
+const sampleBtn = document.querySelector<HTMLButtonElement>("#sample-btn")!;
 const endpointCard = document.querySelector<HTMLDivElement>("#endpoint-card")!;
 const endpointSelect = document.querySelector<HTMLSelectElement>("#endpoint-select")!;
 const outputCard = document.querySelector<HTMLDivElement>("#output-card")!;
@@ -123,6 +129,12 @@ specInput.addEventListener("input", () => {
       loadSpecText(specInput.value);
     }
   }, 400);
+});
+
+sampleBtn.addEventListener("click", () => {
+  specInput.value = SAMPLE_SPEC;
+  loadSpecText(SAMPLE_SPEC);
+  logActivity("tried_sample");
 });
 
 endpointSelect.addEventListener("change", () => {

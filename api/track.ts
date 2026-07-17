@@ -5,7 +5,7 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
-const VALID_EVENTS = new Set(["visit", "generated", "copied"]);
+const VALID_EVENTS = new Set(["visit", "generated", "copied", "tried_sample"]);
 const VALID_METHODS = new Set(["button", "selection"]);
 
 function getIp(req: Request): string {
@@ -56,6 +56,8 @@ export default async function handler(req: Request): Promise<Response> {
     if (method && VALID_METHODS.has(method)) {
       await redis.incr(`activity:copied:${method}`);
     }
+  } else if (event === "tried_sample") {
+    await redis.sadd("visitors:tried_sample", id);
   }
 
   return new Response(null, { status: 204 });
