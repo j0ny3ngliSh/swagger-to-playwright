@@ -1,7 +1,10 @@
 import "./style.css";
+import { inject, track } from "@vercel/analytics";
 import type { OperationInfo } from "./openapi";
 import { parseSpec, listOperations } from "./openapi";
 import { generateTest } from "./codegen";
+
+inject();
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -117,7 +120,13 @@ endpointSelect.addEventListener("change", () => {
 
 copyBtn.addEventListener("click", async () => {
   await navigator.clipboard.writeText(outputCode.textContent ?? "");
+  track("test_copied", { method: "button" });
   const original = copyBtn.textContent;
   copyBtn.textContent = "Copied!";
   window.setTimeout(() => (copyBtn.textContent = original), 1200);
+});
+
+// Catches manual select-all + Cmd/Ctrl-C, which doesn't go through the Copy button.
+outputCode.addEventListener("copy", () => {
+  track("test_copied", { method: "selection" });
 });
