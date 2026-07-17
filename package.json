@@ -6,13 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "typescript": "~6.0.2",
     "vercel": "^56.3.1",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
