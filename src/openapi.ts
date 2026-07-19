@@ -22,6 +22,15 @@ export function parseSpec(raw: string): any {
   return yaml.load(raw);
 }
 
+// Distinguishes an actual OpenAPI/Swagger document from arbitrary YAML/JSON that
+// happens to parse successfully but isn't a spec at all.
+export function isOpenApiSpec(spec: any): boolean {
+  if (!spec || typeof spec !== "object") return false;
+  if (typeof spec.openapi === "string" && /^\d/.test(spec.openapi)) return true;
+  if (typeof spec.swagger === "string" && /^\d/.test(spec.swagger)) return true;
+  return false;
+}
+
 export function resolveRef(spec: any, ref: string): any {
   if (!ref || !ref.startsWith("#/")) return undefined;
   const parts = ref.slice(2).split("/");

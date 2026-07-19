@@ -7,6 +7,7 @@ import {
   resolveSchema,
   listOperations,
   getBaseUrl,
+  isOpenApiSpec,
 } from "../src/openapi";
 
 const sampleYaml = readFileSync(resolve(__dirname, "../sample-openapi.yaml"), "utf-8");
@@ -21,6 +22,33 @@ describe("parseSpec", () => {
   it("parses a JSON spec", () => {
     const spec = parseSpec(JSON.stringify({ openapi: "3.0.0", paths: {} }));
     expect(spec.openapi).toBe("3.0.0");
+  });
+});
+
+describe("isOpenApiSpec", () => {
+  it("accepts a spec with an openapi field", () => {
+    expect(isOpenApiSpec({ openapi: "3.0.0", paths: {} })).toBe(true);
+  });
+
+  it("accepts a spec with a swagger field (v2)", () => {
+    expect(isOpenApiSpec({ swagger: "2.0", paths: {} })).toBe(true);
+  });
+
+  it("rejects arbitrary YAML/JSON with no openapi or swagger field", () => {
+    expect(isOpenApiSpec({ paths: { "/foo": {} } })).toBe(false);
+    expect(isOpenApiSpec({ name: "not a spec", version: "1.0" })).toBe(false);
+  });
+
+  it("rejects non-object input", () => {
+    expect(isOpenApiSpec(null)).toBe(false);
+    expect(isOpenApiSpec(undefined)).toBe(false);
+    expect(isOpenApiSpec("openapi: 3.0.0")).toBe(false);
+    expect(isOpenApiSpec(42)).toBe(false);
+  });
+
+  it("rejects a non-string or non-numeric-looking openapi field", () => {
+    expect(isOpenApiSpec({ openapi: true, paths: {} })).toBe(false);
+    expect(isOpenApiSpec({ openapi: "not-a-version", paths: {} })).toBe(false);
   });
 });
 

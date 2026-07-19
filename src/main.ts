@@ -1,7 +1,7 @@
 import "./style.css";
 import { inject } from "@vercel/analytics";
 import type { OperationInfo } from "./openapi";
-import { parseSpec, listOperations } from "./openapi";
+import { parseSpec, listOperations, isOpenApiSpec } from "./openapi";
 import { generateStarterSuite } from "./starter-suite";
 import { SAMPLE_SPEC } from "./sample-spec";
 
@@ -190,7 +190,12 @@ feedbackSend.addEventListener("click", async () => {
 
 function loadSpecText(text: string, track = true) {
   try {
-    spec = parseSpec(text);
+    const parsed = parseSpec(text);
+    if (!isOpenApiSpec(parsed)) {
+      showError("This doesn't look like an OpenAPI/Swagger spec — missing the 'openapi' or 'swagger' version field.");
+      return;
+    }
+    spec = parsed;
     operations = listOperations(spec);
     if (operations.length === 0) {
       showError("No operations found in this spec (no paths/methods detected).");

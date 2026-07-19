@@ -24,6 +24,10 @@ Every generated file is a handful of tests per endpoint (`src/starter-suite.ts`)
 
   For any validation/contract case, if the spec documents the expected error status (e.g. a `404` or `400` response), the test asserts it for real. If it doesn't, the generator emits a stub with a comment instead of guessing — it will not fabricate a status code or any other business logic the spec doesn't support. There's deliberately no coverage-scoring or AI-generated explanations here — this stays a straightforward, spec-driven generator, not a QA platform.
 
+## Input validation
+
+Upload, paste, and URL-fetch all funnel through the same check (`isOpenApiSpec` in `src/openapi.ts`): the content must parse as YAML/JSON *and* declare an `openapi` (v3) or `swagger` (v2) version field. Arbitrary YAML/JSON that happens to parse but isn't actually a spec is rejected with a clear message instead of failing later with a confusing "no operations found" error.
+
 ## Running locally
 
 ```
