@@ -114,6 +114,68 @@ describe("listOperations", () => {
   });
 });
 
+describe("resolveSchema: allOf", () => {
+  it("merges properties from an allOf with a $ref and an inline schema", () => {
+    const s = {
+      components: {
+        schemas: {
+          Base: {
+            type: "object",
+            properties: { id: { type: "integer" } },
+          },
+        },
+      },
+    };
+    const schema = {
+      allOf: [
+        { $ref: "#/components/schemas/Base" },
+        { type: "object", properties: { name: { type: "string" } } },
+      ],
+    };
+    const result = resolveSchema(s, schema);
+    expect(result.properties).toHaveProperty("id");
+    expect(result.properties).toHaveProperty("name");
+  });
+
+  it("merges required arrays from allOf sub-schemas", () => {
+    const schema = {
+      allOf: [
+        { type: "object", required: ["id"], properties: { id: { type: "integer" } } },
+        { type: "object", required: ["name"], properties: { name: { type: "string" } } },
+      ],
+    };
+    const result = resolveSchema({}, schema);
+    expect(result.required).toContain("id");
+    expect(result.required).toContain("name");
+  });
+
+  it("deduplicates required fields that appear in multiple allOf entries", () => {
+    const schema = {
+      allOf: [
+        { required: ["email"], properties: { email: { type: "string" } } },
+        { required: ["email"], properties: { role: { type: "string" } } },
+      ],
+    };
+    const result = resolveSchema({}, schema);
+    expect(result.required.filter((f: string) => f === "email")).toHaveLength(1);
+  });
+
+  it("does not infinite-loop on a circular $ref inside allOf", () => {
+    const circularSpec = {
+      components: {
+        schemas: {
+          Node: {
+            allOf: [{ $ref: "#/components/schemas/Node" }],
+          },
+        },
+      },
+    };
+    expect(() =>
+      resolveSchema(circularSpec, { $ref: "#/components/schemas/Node" }),
+    ).not.toThrow();
+  });
+});
+
 describe("getBaseUrl", () => {
   it("returns the first server URL when present", () => {
     const spec = parseSpec(sampleYaml);

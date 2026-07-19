@@ -52,6 +52,15 @@ app.innerHTML = `
     </div>
 
     <div id="error" class="error" hidden></div>
+
+    <div class="card email-card">
+      <p class="email-tagline">Get updates when new Playwright API testing features are released.</p>
+      <div class="email-row">
+        <input type="email" id="email-input" placeholder="your@email.com" />
+        <button id="email-btn" type="button">Get updates</button>
+      </div>
+      <div id="email-feedback" class="email-feedback" hidden></div>
+    </div>
   </main>
 `;
 
@@ -153,4 +162,49 @@ copyBtn.addEventListener("click", async () => {
 // Catches manual select-all + Cmd/Ctrl-C, which doesn't go through the Copy button.
 outputCode.addEventListener("copy", () => {
   logActivity("copied", "selection");
+});
+
+// ── Email capture ────────────────────────────────────────────────────────────
+
+const emailInput = document.querySelector<HTMLInputElement>("#email-input")!;
+const emailBtn = document.querySelector<HTMLButtonElement>("#email-btn")!;
+const emailFeedback = document.querySelector<HTMLDivElement>("#email-feedback")!;
+
+function showEmailFeedback(message: string, type: "success" | "error") {
+  emailFeedback.textContent = message;
+  emailFeedback.className = `email-feedback email-feedback--${type}`;
+  emailFeedback.hidden = false;
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+emailBtn.addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+  if (!EMAIL_REGEX.test(email)) {
+    showEmailFeedback("Please enter a valid email address.", "error");
+    return;
+  }
+
+  emailBtn.disabled = true;
+  emailBtn.textContent = "Subscribing…";
+
+  try {
+    const res = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (res.ok || res.status === 204) {
+      showEmailFeedback("You're in — we'll email you when new features ship.", "success");
+      emailInput.value = "";
+    } else {
+      showEmailFeedback("Something went wrong. Please try again.", "error");
+    }
+  } catch {
+    // Non-blocking: if the API is unavailable the main tool still works fine.
+    showEmailFeedback("Could not connect. Your subscription wasn't saved.", "error");
+  } finally {
+    emailBtn.disabled = false;
+    emailBtn.textContent = "Get updates";
+  }
 });

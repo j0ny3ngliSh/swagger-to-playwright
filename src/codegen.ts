@@ -15,7 +15,7 @@ export function exampleForSchema(spec: any, schema: any, depth = 0): any {
     case "object": {
       const obj: Record<string, any> = {};
       const props = resolved.properties || {};
-      const required: string[] = resolved.required || Object.keys(props);
+      const required: string[] = resolved.required || [];
       for (const propName of Object.keys(props)) {
         if (required.includes(propName) || Object.keys(props).length <= 6) {
           obj[propName] = exampleForSchema(spec, props[propName], depth + 1);

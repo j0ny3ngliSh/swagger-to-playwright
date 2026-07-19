@@ -40,6 +40,26 @@ export function resolveSchema(spec: any, schema: any, seen = new Set<string>()):
     seen.add(schema.$ref);
     return resolveSchema(spec, resolveRef(spec, schema.$ref), seen);
   }
+  // Merge allOf sub-schemas: combine properties and required arrays.
+  // Only handles the common object-merge case — not full JSON Schema composition.
+  if (Array.isArray(schema.allOf) && schema.allOf.length > 0) {
+    const base: any = { ...schema };
+    delete base.allOf;
+    for (const sub of schema.allOf) {
+      const resolved = resolveSchema(spec, sub, seen);
+      if (!resolved) continue;
+      if (resolved.properties) {
+        base.properties = { ...(base.properties ?? {}), ...resolved.properties };
+      }
+      if (Array.isArray(resolved.required)) {
+        base.required = [...new Set([...(base.required ?? []), ...resolved.required])];
+      }
+      if (resolved.type && !base.type) {
+        base.type = resolved.type;
+      }
+    }
+    return base;
+  }
   return schema;
 }
 

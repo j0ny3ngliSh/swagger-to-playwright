@@ -157,3 +157,68 @@ pre {
   border-radius: 8px;
   font-size: 0.9rem;
 }
+
+/* ── Email capture ─────────────────────────────────────────────────────────── */
+
+.email-card {
+  margin-top: 8px;
+}
+
+.email-tagline {
+  margin: 0 0 14px;
+  color: #9aa0aa;
+  font-size: 0.9rem;
+}
+
+.email-row {
+  display: flex;
+  gap: 8px;
+}
+
+#email-input {
+  flex: 1;
+  padding: 9px 12px;
+  background: #0f1115;
+  color: #e6e6e6;
+  border: 1px solid #262b35;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+#email-input:focus {
+  outline: none;
+  border-color: #2b6cff;
+}
+
+#email-btn {
+  background: #2b6cff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#email-btn:hover:not(:disabled) {
+  background: #1f57d6;
+}
+
+#email-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.email-feedback {
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+.email-feedback--success {
+  color: #6ee7a8;
+}
+
+.email-feedback--error {
+  color: #ffb4b4;
+}
