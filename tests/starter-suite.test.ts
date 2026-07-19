@@ -110,7 +110,7 @@ describe("generateStarterSuite: POST /users (auth, required field, body)", () =>
   });
 
   it("generates a payload from the request body schema", () => {
-    expect(output).toContain('"email": "user@example.com"');
+    expect(output).toContain('email: "user@example.com"');
   });
 
   it("generates an input-validation test for missing required field", () => {
@@ -176,9 +176,9 @@ describe("generateStarterSuite: GET /users (collection, pagination)", () => {
   });
 
   it("generates a pagination variant for the page parameter", () => {
-    // escape() converts ' → \' in test titles; JSON.stringify is compact (no spaces)
+    // escape() converts ' → \' in test titles
     expect(output).toContain("supports the \\'page\\' parameter");
-    expect(output).toContain('"page":2');
+    expect(output).toContain('page: 2');
   });
 
   it("does NOT generate an auth test when security is []", () => {

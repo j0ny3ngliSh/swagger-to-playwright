@@ -1,6 +1,6 @@
 import type { OperationInfo } from "./openapi";
 import { resolveSchema, getBaseUrl } from "./openapi";
-import { exampleForSchema, paramExample, buildPath, firstSuccessResponse, escape } from "./codegen";
+import { exampleForSchema, paramExample, buildPath, firstSuccessResponse, escape, formatJsValue } from "./codegen";
 
 const PAGINATION_PARAM_NAMES = /^(page|limit|offset|cursor|per_?page|page_?size|page_?number)$/i;
 const UNDOCUMENTED_STATUS_COMMENT =
@@ -131,7 +131,7 @@ function renderCase(c: TestCase, method: string, baseUrl: string): string[] {
   lines.push(`  test('${escape(c.title)}', async ({ request }) => {`);
 
   if (c.queryParams) {
-    lines.push(`    const params = ${JSON.stringify(c.queryParams)};`);
+    lines.push(`    const params = ${formatJsValue(c.queryParams, 4)};`);
     lines.push("");
   }
 
@@ -143,7 +143,7 @@ function renderCase(c: TestCase, method: string, baseUrl: string): string[] {
   lines.push("");
 
   if (c.payload !== undefined) {
-    lines.push(`    const payload = ${JSON.stringify(c.payload, null, 2).replace(/\n/g, "\n    ")};`);
+    lines.push(`    const payload = ${formatJsValue(c.payload, 4)};`);
     lines.push("");
   }
 

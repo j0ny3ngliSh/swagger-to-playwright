@@ -1,6 +1,44 @@
 import type { OperationInfo } from "./openapi";
 import { resolveSchema, getBaseUrl } from "./openapi";
 
+/**
+ * Formats a value as TypeScript source — objects use unquoted keys and readable
+ * spacing instead of JSON.stringify's quoted-key format.
+ *
+ * @param baseIndent  Column offset of the opening `{` (used for multi-line
+ *                    indentation of properties and the closing brace).
+ */
+export function formatJsValue(val: any, baseIndent = 0): string {
+  if (val === null) return "null";
+  if (val === undefined) return "undefined";
+  if (typeof val === "string") return JSON.stringify(val);
+  if (typeof val === "number" || typeof val === "boolean") return String(val);
+
+  if (Array.isArray(val)) {
+    if (val.length === 0) return "[]";
+    const items = val.map((v) => formatJsValue(v, baseIndent + 2));
+    const inline = `[${items.join(", ")}]`;
+    if (inline.length <= 60) return inline;
+    const pad = " ".repeat(baseIndent + 2);
+    return `[\n${items.map((i) => `${pad}${i}`).join(",\n")}\n${" ".repeat(baseIndent)}]`;
+  }
+
+  if (typeof val === "object") {
+    const entries = Object.entries(val as Record<string, unknown>);
+    if (entries.length === 0) return "{}";
+    const pairs = entries.map(([k, v]) => {
+      const key = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(k) ? k : JSON.stringify(k);
+      return `${key}: ${formatJsValue(v, baseIndent + 2)}`;
+    });
+    const inline = `{ ${pairs.join(", ")} }`;
+    if (inline.length <= 60) return inline;
+    const pad = " ".repeat(baseIndent + 2);
+    return `{\n${pairs.map((p) => `${pad}${p}`).join(",\n")}\n${" ".repeat(baseIndent)}}`;
+  }
+
+  return String(val);
+}
+
 export function exampleForSchema(spec: any, schema: any, depth = 0): any {
   const resolved = resolveSchema(spec, schema);
   if (!resolved || depth > 5) return null;
@@ -83,7 +121,7 @@ export function generateTest(spec: any, op: OperationInfo): string {
   if (queryParams.length > 0) {
     lines.push(`    const params = {`);
     for (const p of queryParams) {
-      lines.push(`      ${p.name}: ${JSON.stringify(paramExample(spec, p))},${p.required ? "" : " // optional"}`);
+      lines.push(`      ${p.name}: ${formatJsValue(paramExample(spec, p))},${p.required ? "" : " // optional"}`);
     }
     lines.push(`    };`);
     lines.push("");
@@ -103,7 +141,7 @@ export function generateTest(spec: any, op: OperationInfo): string {
     const content = op.requestBody.content?.["application/json"];
     const payload = content?.schema ? exampleForSchema(spec, content.schema) : {};
     bodyVar = "payload";
-    lines.push(`    const payload = ${JSON.stringify(payload, null, 2).replace(/\n/g, "\n    ")};`);
+    lines.push(`    const payload = ${formatJsValue(payload, 4)};`);
     lines.push("");
   }
 

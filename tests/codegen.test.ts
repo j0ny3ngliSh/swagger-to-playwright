@@ -47,8 +47,8 @@ describe("generateTest: POST /pets (auth required, request body)", () => {
   });
 
   it("generates a request payload from the NewPet schema", () => {
-    expect(output).toContain(`"name": "string"`);
-    expect(output).toContain(`"tag": "string"`);
+    expect(output).toContain('name: "string"');
+    expect(output).toContain('tag: "string"');
   });
 
   it("posts with the generated payload as the request body", () => {
