@@ -149,6 +149,70 @@ pre {
   white-space: pre;
 }
 
+/* ── Syntax highlighting (VS Code Dark+ token colors) ─────────────────────── */
+
+.tok-key { color: #9cdcfe; }
+.tok-str { color: #ce9178; }
+.tok-kw { color: #569cd6; }
+.tok-kwctrl { color: #c586c0; }
+.tok-num { color: #b5cea8; }
+.tok-com { color: #6a9955; font-style: italic; }
+.tok-fn { color: #dcdcaa; }
+
+#output-code {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+/* ── Spec editor (highlighted textarea overlay) ───────────────────────────── */
+/* Transparent textarea sits on top of a highlighted <pre>, so typing stays
+   fully native while the text underneath shows syntax colors through it. */
+
+.editor-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.editor-highlight,
+.editor-input {
+  margin: 0;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  border-radius: 8px;
+  border: 1px solid #262b35;
+}
+
+.editor-highlight {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  pointer-events: none;
+}
+
+.editor-input {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  min-height: 140px;
+  background: transparent;
+  color: transparent;
+  caret-color: #d4d4d4;
+  resize: vertical;
+}
+
+.editor-input::selection {
+  background: rgba(38, 79, 120, 0.6);
+}
+
 .error {
   background: #3a1e1e;
   border: 1px solid #6b2e2e;

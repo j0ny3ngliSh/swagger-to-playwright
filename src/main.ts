@@ -4,6 +4,7 @@ import type { OperationInfo } from "./openapi";
 import { parseSpec, listOperations, isOpenApiSpec } from "./openapi";
 import { generateStarterSuite } from "./starter-suite";
 import { SAMPLE_SPEC } from "./sample-spec";
+import { highlightSpec, highlightTs } from "./highlight";
 
 inject();
 
@@ -49,7 +50,10 @@ app.innerHTML = `
         <button id="url-btn" type="button">Fetch</button>
       </div>
       <div class="or">or paste it below</div>
-      <textarea id="spec-input" placeholder="Paste your OpenAPI/Swagger spec here (YAML or JSON)..."></textarea>
+      <div class="editor-wrap">
+        <pre id="spec-highlight" class="editor-highlight" aria-hidden="true"></pre>
+        <textarea id="spec-input" class="editor-input" spellcheck="false" placeholder="Paste your OpenAPI/Swagger spec here (YAML or JSON)..."></textarea>
+      </div>
       <button id="sample-btn" type="button" class="sample-btn">Try with sample spec</button>
     </div>
 
@@ -99,6 +103,7 @@ app.innerHTML = `
 const fileInput = document.querySelector<HTMLInputElement>("#file-input")!;
 const uploadLabel = document.querySelector<HTMLSpanElement>("#upload-label")!;
 const specInput = document.querySelector<HTMLTextAreaElement>("#spec-input")!;
+const specHighlight = document.querySelector<HTMLPreElement>("#spec-highlight")!;
 const sampleBtn = document.querySelector<HTMLButtonElement>("#sample-btn")!;
 const urlInput = document.querySelector<HTMLInputElement>("#url-input")!;
 const urlBtn = document.querySelector<HTMLButtonElement>("#url-btn")!;
@@ -186,6 +191,27 @@ feedbackSend.addEventListener("click", async () => {
   }
 });
 
+// ── Spec editor highlighting ──────────────────────────────────────────────────
+// The textarea stays fully editable and native; a highlighted <pre> sits behind it
+// (transparent textarea text, visible caret) and is kept in sync on every keystroke.
+
+function refreshSpecHighlight() {
+  specHighlight.innerHTML = highlightSpec(specInput.value);
+}
+
+function setSpecValue(text: string) {
+  specInput.value = text;
+  refreshSpecHighlight();
+  specHighlight.scrollTop = 0;
+  specHighlight.scrollLeft = 0;
+}
+
+specInput.addEventListener("input", refreshSpecHighlight);
+specInput.addEventListener("scroll", () => {
+  specHighlight.scrollTop = specInput.scrollTop;
+  specHighlight.scrollLeft = specInput.scrollLeft;
+});
+
 // ── Spec loading ──────────────────────────────────────────────────────────────
 
 function loadSpecText(text: string, track = true) {
@@ -220,7 +246,7 @@ function renderOutput(index: number, track = true) {
   const op = operations[index];
   try {
     const code = generateStarterSuite(spec, op);
-    outputCode.textContent = code;
+    outputCode.innerHTML = highlightTs(code);
     outputCard.hidden = false;
     resetFeedback();
     if (track) logActivity("generated");
@@ -263,7 +289,7 @@ urlBtn.addEventListener("click", async () => {
     const res = await fetch(`/api/fetch-spec?url=${encodeURIComponent(url)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
-    specInput.value = text;
+    setSpecValue(text);
     outputLabel.textContent = "Generated test";
     loadSpecText(text);
     logActivity("fetched_url");
@@ -278,7 +304,7 @@ urlBtn.addEventListener("click", async () => {
 // ── Sample spec ───────────────────────────────────────────────────────────────
 
 sampleBtn.addEventListener("click", () => {
-  specInput.value = SAMPLE_SPEC;
+  setSpecValue(SAMPLE_SPEC);
   outputLabel.textContent = "Generated test · sample spec";
   loadSpecText(SAMPLE_SPEC);
   logActivity("tried_sample");
@@ -346,6 +372,6 @@ emailBtn.addEventListener("click", async () => {
 // Populate output immediately so visitors see a real test without any action.
 // track=false so page loads don't inflate the "generated" funnel metric.
 
-specInput.value = SAMPLE_SPEC;
+setSpecValue(SAMPLE_SPEC);
 outputLabel.textContent = "Generated test · sample spec";
 loadSpecText(SAMPLE_SPEC, false);
