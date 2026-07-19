@@ -1,6 +1,6 @@
 # OpenAPI → Playwright
 
-Generate ready-to-run API tests from your OpenAPI specification. No accounts, no login, no billing for users. It's a static frontend plus two tiny serverless endpoints used only for activity tracking (see below) — there is no user data, no database of users, nothing to sign up for.
+Generate ready-to-run API tests from your OpenAPI specification. No accounts, no login, no billing for users. It's a static frontend plus a handful of tiny serverless endpoints for activity tracking and an optional email signup (see below) — there's no account system, but email addresses from the "get updates" box are stored (see Email capture).
 
 ## Flow
 
@@ -57,3 +57,7 @@ Two layers, both free:
   Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned / N tried sample` readout.
 
 This exists because pageviews alone don't tell you if the tool is actually useful — the funnel does.
+
+## Email capture
+
+A "get updates" box (`src/main.ts`, styled in `src/style.css`) posts to `api/subscribe.ts`, which validates the address and adds it to a Redis set (`subscribers:emails`) in the same Upstash instance used for activity tracking. This is storage only — no emails are actually sent yet. Before using this list for anything, move it to a real email provider (Resend, ConvertKit, Mailchimp, etc.) per the TODO comment in `api/subscribe.ts`; sending campaign email straight from a hand-rolled Redis list isn't a good idea (deliverability, unsubscribe handling, compliance).
