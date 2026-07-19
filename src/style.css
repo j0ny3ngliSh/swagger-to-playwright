@@ -158,6 +158,136 @@ pre {
   font-size: 0.9rem;
 }
 
+/* ── URL fetch ─────────────────────────────────────────────────────────────── */
+
+.url-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+#url-input {
+  flex: 1;
+  padding: 9px 12px;
+  background: #0f1115;
+  color: #e6e6e6;
+  border: 1px solid #262b35;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+#url-input:focus {
+  outline: none;
+  border-color: #2b6cff;
+}
+
+#url-btn {
+  background: #1e2230;
+  color: #cfd3da;
+  border: 1px solid #3a4150;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#url-btn:hover:not(:disabled) {
+  color: #e6e6e6;
+  border-color: #5a6272;
+}
+
+#url-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── Feedback widget ───────────────────────────────────────────────────────── */
+
+.feedback-card {
+  padding: 16px 20px;
+}
+
+.feedback-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.feedback-label {
+  color: #9aa0aa;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.thumb-btn {
+  background: transparent;
+  border: 1px solid #3a4150;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.thumb-btn:hover:not(:disabled) {
+  border-color: #5a6272;
+  background: #1e2230;
+}
+
+.thumb-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.feedback-missing-inner {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#feedback-missing {
+  flex: 1;
+  padding: 8px 12px;
+  background: #0f1115;
+  color: #e6e6e6;
+  border: 1px solid #262b35;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+#feedback-missing:focus {
+  outline: none;
+  border-color: #2b6cff;
+}
+
+.feedback-send-btn {
+  background: #1e2230;
+  color: #cfd3da;
+  border: 1px solid #3a4150;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.feedback-send-btn:hover:not(:disabled) {
+  color: #e6e6e6;
+  border-color: #5a6272;
+}
+
+.feedback-send-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#feedback-thanks {
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+  color: #6ee7a8;
+}
+
 /* ── Email capture ─────────────────────────────────────────────────────────── */
 
 .email-card {

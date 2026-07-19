@@ -5,7 +5,10 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
-const VALID_EVENTS = new Set(["visit", "generated", "copied", "tried_sample"]);
+const VALID_EVENTS = new Set([
+  "visit", "generated", "copied", "tried_sample",
+  "thumbs_up", "thumbs_down", "fetched_url",
+]);
 const VALID_METHODS = new Set(["button", "selection"]);
 
 function getIp(req: Request): string {
@@ -58,6 +61,14 @@ export default async function handler(req: Request): Promise<Response> {
     }
   } else if (event === "tried_sample") {
     await redis.sadd("visitors:tried_sample", id);
+  } else if (event === "thumbs_up") {
+    await redis.sadd("visitors:thumbs_up", id);
+    await redis.incr("feedback:thumbs_up");
+  } else if (event === "thumbs_down") {
+    await redis.sadd("visitors:thumbs_down", id);
+    await redis.incr("feedback:thumbs_down");
+  } else if (event === "fetched_url") {
+    await redis.sadd("visitors:fetched_url", id);
   }
 
   return new Response(null, { status: 204 });
