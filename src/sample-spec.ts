@@ -36,6 +36,12 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Pet"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     post:
       summary: Create a pet
       operationId: createPet
@@ -52,6 +58,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Pet"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /pets/{petId}:
     get:
       summary: Get a pet by id
@@ -62,6 +80,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         "200":
           description: OK
@@ -69,6 +88,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Pet"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   securitySchemes:
     bearerAuth:
@@ -92,5 +129,10 @@ components:
         name:
           type: string
         tag:
+          type: string
+    Error:
+      type: object
+      properties:
+        message:
           type: string
 `;
