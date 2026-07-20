@@ -66,8 +66,10 @@ Two layers, both free:
   - **copied** — unique visitors who copied a test (via the Copy button or manual select-all)
   - **returned** — visitors seen on 2+ separate visits, even within the same day (not gated by calendar day)
   - **tried_sample** — unique visitors who clicked "Try with sample spec" (`src/sample-spec.ts`), added to see whether not having a spec handy was the reason visitors weren't generating tests
+  - **thumbs_up** / **thumbs_down** — unique visitors who rated the generated test with the 👍/👎 feedback widget
+  - **missing_feedback** — the actual text people typed in response to "What was missing?" (only shown in the JSON response, not the text format — it's freeform content, not a count)
 
-  Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned / N tried sample` readout.
+  Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned / N tried sample / N thumbs up / N thumbs down / N missing-feedback notes` readout.
 
 This exists because pageviews alone don't tell you if the tool is actually useful — the funnel does.
 

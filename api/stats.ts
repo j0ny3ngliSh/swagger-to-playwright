@@ -5,8 +5,24 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
+interface MissingFeedbackEntry {
+  text: string;
+  ts: number;
+}
+
 export default async function handler(req: Request): Promise<Response> {
-  const [visitors, generated, copied, returned, triedSample, copiedButton, copiedSelection] = await Promise.all([
+  const [
+    visitors,
+    generated,
+    copied,
+    returned,
+    triedSample,
+    copiedButton,
+    copiedSelection,
+    thumbsUp,
+    thumbsDown,
+    missingFeedbackRaw,
+  ] = await Promise.all([
     redis.scard("visitors:all"),
     redis.scard("visitors:generated"),
     redis.scard("visitors:copied"),
@@ -14,7 +30,14 @@ export default async function handler(req: Request): Promise<Response> {
     redis.scard("visitors:tried_sample"),
     redis.get<number>("activity:copied:button"),
     redis.get<number>("activity:copied:selection"),
+    redis.scard("visitors:thumbs_up"),
+    redis.scard("visitors:thumbs_down"),
+    redis.lrange("feedback:missing", 0, -1),
   ]);
+
+  const missingFeedback: MissingFeedbackEntry[] = (missingFeedbackRaw ?? []).map((entry) =>
+    typeof entry === "string" ? JSON.parse(entry) : entry,
+  );
 
   const stats = {
     visitors,
@@ -24,11 +47,14 @@ export default async function handler(req: Request): Promise<Response> {
     tried_sample: triedSample,
     copied_button_events: copiedButton ?? 0,
     copied_selection_events: copiedSelection ?? 0,
+    thumbs_up: thumbsUp,
+    thumbs_down: thumbsDown,
+    missing_feedback: missingFeedback,
   };
 
   const url = new URL(req.url);
   if (url.searchParams.get("format") === "text") {
-    const text = `${visitors} visitors\n${generated} generated\n${copied} copied\n${returned} returned\n${triedSample} tried sample\n`;
+    const text = `${visitors} visitors\n${generated} generated\n${copied} copied\n${returned} returned\n${triedSample} tried sample\n${thumbsUp} thumbs up\n${thumbsDown} thumbs down\n${missingFeedback.length} missing-feedback notes\n`;
     return new Response(text, { headers: { "content-type": "text/plain" } });
   }
 
