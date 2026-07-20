@@ -33,6 +33,16 @@ Hand-written, regex-based tokenizer (`src/highlight.ts`) — no external highlig
 
 This is a best-effort tokenizer, not a real parser — good enough for the OpenAPI/TypeScript content this app actually displays, with a couple of known, deliberate simplifications: a `#` inside an unquoted YAML scalar not preceded by whitespace could misfire as a comment start (rare in practice), and template-literal interpolations (`${...}`) are colored as part of the surrounding string rather than tokenized separately.
 
+## Real API quick-start
+
+Above the input area, three buttons ("Try PetStore API" / "Try Notion API" / "Try Spotify API", defined in `src/main.ts`) load a real public spec with one click, through the same `/api/fetch-spec` proxy the manual URL-fetch field uses. Chosen deliberately for size, not just recognizability:
+
+- **PetStore** — 17 KB, 19 operations
+- **Notion** — 371 KB, 13 operations, real Bearer-auth API (also demos the Authentication category)
+- **Spotify** — 287 KB, 88 operations
+
+GitHub's REST API and JSONPlaceholder were the original candidates but don't work here: GitHub only publishes its full monolithic spec (12.8 MB, 800+ endpoints — over the proxy's 2 MB cap, and a dropdown that size defeats the "see value fast" point of this feature), and JSONPlaceholder has no official OpenAPI spec at all (the unofficial ones on GitHub are unmaintained, near-zero-star personal repos, not something worth a trust-building quick-start button pointing at).
+
 ## Input validation
 
 Upload, paste, and URL-fetch all funnel through the same check (`isOpenApiSpec` in `src/openapi.ts`): the content must parse as YAML/JSON *and* declare an `openapi` (v3) or `swagger` (v2) version field. Arbitrary YAML/JSON that happens to parse but isn't actually a spec is rejected with a clear message instead of failing later with a confusing "no operations found" error.
@@ -68,8 +78,9 @@ Two layers, both free:
   - **tried_sample** — unique visitors who clicked "Try with sample spec" (`src/sample-spec.ts`), added to see whether not having a spec handy was the reason visitors weren't generating tests
   - **thumbs_up** / **thumbs_down** — unique visitors who rated the generated test with the 👍/👎 feedback widget
   - **missing_feedback** — the actual text people typed in response to "What was missing?" (only shown in the JSON response, not the text format — it's freeform content, not a count)
+  - **tried_example** — unique visitors who clicked one of the "Try a real API" quick-start buttons (per-example breakdown isn't in `/api/stats`, but is queryable directly: `redis.get("activity:tried_example:petstore")` etc.)
 
-  Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned / N tried sample / N thumbs up / N thumbs down / N missing-feedback notes` readout.
+  Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned / N tried sample / N thumbs up / N thumbs down / N missing-feedback notes / N tried real API example` readout.
 
 This exists because pageviews alone don't tell you if the tool is actually useful — the funnel does.
 

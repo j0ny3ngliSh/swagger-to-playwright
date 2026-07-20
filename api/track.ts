@@ -7,9 +7,10 @@ const redis = new Redis({
 
 const VALID_EVENTS = new Set([
   "visit", "generated", "copied", "tried_sample",
-  "thumbs_up", "thumbs_down", "fetched_url",
+  "thumbs_up", "thumbs_down", "fetched_url", "tried_example",
 ]);
 const VALID_METHODS = new Set(["button", "selection"]);
+const VALID_EXAMPLES = new Set(["petstore", "notion", "spotify"]);
 
 function getIp(req: Request): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
@@ -75,6 +76,11 @@ export default async function handler(req: Request): Promise<Response> {
     await redis.incr("feedback:thumbs_down");
   } else if (event === "fetched_url") {
     await redis.sadd("visitors:fetched_url", id);
+  } else if (event === "tried_example") {
+    await redis.sadd("visitors:tried_example", id);
+    if (method && VALID_EXAMPLES.has(method)) {
+      await redis.incr(`activity:tried_example:${method}`);
+    }
   }
 
   return new Response(null, { status: 204 });

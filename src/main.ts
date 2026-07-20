@@ -8,6 +8,19 @@ import { highlightSpec, highlightTs } from "./highlight";
 
 inject();
 
+// ── Real API examples ─────────────────────────────────────────────────────────
+// Small, real, publicly documented specs — chosen to actually load fast and stay
+// browsable (GitHub's own spec is 12.8MB / 800+ endpoints, so it's deliberately not
+// one of these; Notion stands in as a real Bearer-auth API instead).
+
+type RealExampleId = "petstore" | "notion" | "spotify";
+
+const REAL_EXAMPLES: { id: RealExampleId; label: string; url: string }[] = [
+  { id: "petstore", label: "Try PetStore API", url: "https://petstore3.swagger.io/api/v3/openapi.json" },
+  { id: "notion", label: "Try Notion API", url: "https://api.apis.guru/v2/specs/notion.com/1.0.0/openapi.yaml" },
+  { id: "spotify", label: "Try Spotify API", url: "https://api.apis.guru/v2/specs/spotify.com/1.0.0/openapi.yaml" },
+];
+
 // ── Activity tracking ─────────────────────────────────────────────────────────
 
 type TrackEvent =
@@ -17,9 +30,10 @@ type TrackEvent =
   | "tried_sample"
   | "thumbs_up"
   | "thumbs_down"
-  | "fetched_url";
+  | "fetched_url"
+  | "tried_example";
 
-function logActivity(event: TrackEvent, method?: "button" | "selection") {
+function logActivity(event: TrackEvent, method?: "button" | "selection" | RealExampleId) {
   fetch("/api/track", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -38,6 +52,11 @@ app.innerHTML = `
     <h1>OpenAPI → Playwright</h1>
     <p class="tagline">Generate ready-to-run API tests from your OpenAPI specification.</p>
     <p class="subtitle">Upload your Swagger/OpenAPI file, select an endpoint, and get Playwright tests generated from your API contract.</p>
+
+    <p class="real-api-label">Try a real API</p>
+    <div class="real-api-row" id="real-api-row">
+      ${REAL_EXAMPLES.map((ex) => `<button type="button" class="real-api-btn" data-example="${ex.id}">${ex.label}</button>`).join("")}
+    </div>
 
     <div class="card">
       <label class="upload">
@@ -107,6 +126,7 @@ const specHighlight = document.querySelector<HTMLPreElement>("#spec-highlight")!
 const sampleBtn = document.querySelector<HTMLButtonElement>("#sample-btn")!;
 const urlInput = document.querySelector<HTMLInputElement>("#url-input")!;
 const urlBtn = document.querySelector<HTMLButtonElement>("#url-btn")!;
+const realApiRow = document.querySelector<HTMLDivElement>("#real-api-row")!;
 const endpointCard = document.querySelector<HTMLDivElement>("#endpoint-card")!;
 const endpointSelect = document.querySelector<HTMLSelectElement>("#endpoint-select")!;
 const outputCard = document.querySelector<HTMLDivElement>("#output-card")!;
@@ -278,7 +298,17 @@ specInput.addEventListener("input", () => {
   }, 400);
 });
 
-// ── URL fetch ─────────────────────────────────────────────────────────────────
+// ── URL fetch (shared by the manual Fetch button and the real-API quick-start buttons) ─
+
+async function fetchAndLoadSpec(url: string, outputLabelText: string): Promise<string> {
+  const res = await fetch(`/api/fetch-spec?url=${encodeURIComponent(url)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  setSpecValue(text);
+  outputLabel.textContent = outputLabelText;
+  loadSpecText(text);
+  return text;
+}
 
 urlBtn.addEventListener("click", async () => {
   const url = urlInput.value.trim();
@@ -286,12 +316,7 @@ urlBtn.addEventListener("click", async () => {
   urlBtn.disabled = true;
   urlBtn.textContent = "Fetching…";
   try {
-    const res = await fetch(`/api/fetch-spec?url=${encodeURIComponent(url)}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    setSpecValue(text);
-    outputLabel.textContent = "Generated test";
-    loadSpecText(text);
+    await fetchAndLoadSpec(url, "Generated test");
     logActivity("fetched_url");
   } catch (e: any) {
     showError(`Couldn't fetch spec from URL: ${e.message ?? e}`);
@@ -299,6 +324,29 @@ urlBtn.addEventListener("click", async () => {
     urlBtn.disabled = false;
     urlBtn.textContent = "Fetch";
   }
+});
+
+// ── Real API quick-start buttons ────────────────────────────────────────────────
+
+realApiRow.querySelectorAll<HTMLButtonElement>(".real-api-btn").forEach((btn) => {
+  const id = btn.dataset.example as RealExampleId;
+  const example = REAL_EXAMPLES.find((ex) => ex.id === id)!;
+
+  btn.addEventListener("click", async () => {
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Loading…";
+    urlInput.value = example.url;
+    try {
+      await fetchAndLoadSpec(example.url, `Generated test · ${example.label.replace("Try ", "")}`);
+      logActivity("tried_example", example.id);
+    } catch (e: any) {
+      showError(`Couldn't load ${example.label}: ${e.message ?? e}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
 });
 
 // ── Sample spec ───────────────────────────────────────────────────────────────

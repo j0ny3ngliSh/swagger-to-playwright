@@ -22,6 +22,7 @@ export default async function handler(req: Request): Promise<Response> {
     thumbsUp,
     thumbsDown,
     missingFeedbackRaw,
+    triedExample,
   ] = await Promise.all([
     redis.scard("visitors:all"),
     redis.scard("visitors:generated"),
@@ -33,6 +34,7 @@ export default async function handler(req: Request): Promise<Response> {
     redis.scard("visitors:thumbs_up"),
     redis.scard("visitors:thumbs_down"),
     redis.lrange("feedback:missing", 0, -1),
+    redis.scard("visitors:tried_example"),
   ]);
 
   const missingFeedback: MissingFeedbackEntry[] = (missingFeedbackRaw ?? []).map((entry) =>
@@ -50,11 +52,12 @@ export default async function handler(req: Request): Promise<Response> {
     thumbs_up: thumbsUp,
     thumbs_down: thumbsDown,
     missing_feedback: missingFeedback,
+    tried_example: triedExample,
   };
 
   const url = new URL(req.url);
   if (url.searchParams.get("format") === "text") {
-    const text = `${visitors} visitors\n${generated} generated\n${copied} copied\n${returned} returned\n${triedSample} tried sample\n${thumbsUp} thumbs up\n${thumbsDown} thumbs down\n${missingFeedback.length} missing-feedback notes\n`;
+    const text = `${visitors} visitors\n${generated} generated\n${copied} copied\n${returned} returned\n${triedSample} tried sample\n${thumbsUp} thumbs up\n${thumbsDown} thumbs down\n${missingFeedback.length} missing-feedback notes\n${triedExample} tried real API example\n`;
     return new Response(text, { headers: { "content-type": "text/plain" } });
   }
 
