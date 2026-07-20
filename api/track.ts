@@ -27,7 +27,13 @@ async function hashIp(ip: string): Promise<string> {
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    // Not a bug: this is an internal, POST-only analytics endpoint the app calls via
+    // fetch(). Visiting it directly in a browser sends GET, which lands here — this
+    // message exists so that looks intentional rather than broken.
+    return new Response(
+      "This endpoint only accepts POST requests from the app itself — it's not meant to be visited directly.",
+      { status: 405, headers: { "content-type": "text/plain" } },
+    );
   }
 
   let body: { event?: string; method?: string };

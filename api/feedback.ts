@@ -7,7 +7,10 @@ const redis = new Redis({
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return new Response(
+      "This endpoint only accepts POST requests from the app itself — it's not meant to be visited directly.",
+      { status: 405, headers: { "content-type": "text/plain" } },
+    );
   }
 
   let body: { text?: unknown };
