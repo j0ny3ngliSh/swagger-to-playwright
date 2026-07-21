@@ -4,7 +4,7 @@ import type { OperationInfo } from "./openapi";
 import { parseSpec, listOperations, isOpenApiSpec } from "./openapi";
 import { generateStarterSuite } from "./starter-suite";
 import { SAMPLE_SPEC } from "./sample-spec";
-import { highlightSpec, highlightTs } from "./highlight";
+import { highlightSpec, highlightTs, escapeHtml } from "./highlight";
 
 inject();
 
@@ -231,8 +231,10 @@ function loadSpecText(text: string, track = true) {
 }
 
 function populateEndpoints(track = true) {
+  // op.path comes straight from the parsed spec — untrusted (pasted or fetched from a
+  // user-supplied URL), so it must be escaped before going into innerHTML.
   endpointSelect.innerHTML = operations
-    .map((op, i) => `<option value="${i}">${op.method.toUpperCase()} ${op.path}</option>`)
+    .map((op, i) => `<option value="${i}">${escapeHtml(op.method.toUpperCase())} ${escapeHtml(op.path)}</option>`)
     .join("");
   endpointCard.hidden = false;
   renderOutput(0, track);
