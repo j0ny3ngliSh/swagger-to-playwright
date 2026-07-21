@@ -5,7 +5,9 @@ Generate ready-to-run API tests from your OpenAPI specification. No accounts, no
 ## Flow
 
 ```
-Upload your Swagger/OpenAPI file (or click "Try with sample spec")
+Land on the page — a sample spec is already loaded, generated output is already visible
+      ↓
+Upload your own Swagger/OpenAPI file, paste it, or fetch it from a URL
       ↓
 Select an endpoint
       ↓
@@ -33,15 +35,9 @@ Hand-written, regex-based tokenizer (`src/highlight.ts`) — no external highlig
 
 This is a best-effort tokenizer, not a real parser — good enough for the OpenAPI/TypeScript content this app actually displays, with a couple of known, deliberate simplifications: a `#` inside an unquoted YAML scalar not preceded by whitespace could misfire as a comment start (rare in practice), and template-literal interpolations (`${...}`) are colored as part of the surrounding string rather than tokenized separately.
 
-## Real API quick-start
+## Mobile responsiveness
 
-Above the input area, three buttons ("Try PetStore API" / "Try Notion API" / "Try Spotify API", defined in `src/main.ts`) load a real public spec with one click, through the same `/api/fetch-spec` proxy the manual URL-fetch field uses. Chosen deliberately for size, not just recognizability:
-
-- **PetStore** — 17 KB, 19 operations
-- **Notion** — 371 KB, 13 operations, real Bearer-auth API (also demos the Authentication category)
-- **Spotify** — 287 KB, 88 operations
-
-GitHub's REST API and JSONPlaceholder were the original candidates but don't work here: GitHub only publishes its full monolithic spec (12.8 MB, 800+ endpoints — over the proxy's 2 MB cap, and a dropdown that size defeats the "see value fast" point of this feature), and JSONPlaceholder has no official OpenAPI spec at all (the unofficial ones on GitHub are unmaintained, near-zero-star personal repos, not something worth a trust-building quick-start button pointing at).
+A `@media (max-width: 640px)` block in `src/style.css` deliberately narrows the input options rather than trying to cram all of them onto a small screen: file upload and the paste editor are hidden, leaving URL-fetch as the only input path (auto-loaded sample output is already visible on load either way). Also fixes iOS Safari's zoom-on-input-focus (inputs need `font-size: 16px`+), gives buttons larger tap targets, and stacks the email/feedback rows vertically.
 
 ## Input validation
 
@@ -75,10 +71,9 @@ Two layers, both free:
   - **generated** — unique visitors (by that same IP hash) who generated at least one test
   - **copied** — unique visitors who copied a test (via the Copy button or manual select-all)
   - **returned** — visitors seen on 2+ separate visits, even within the same day (not gated by calendar day)
-  - **tried_sample** — unique visitors who clicked "Try with sample spec" (`src/sample-spec.ts`), added to see whether not having a spec handy was the reason visitors weren't generating tests
   - **thumbs_up** / **thumbs_down** — unique visitors who rated the generated test with the 👍/👎 feedback widget
   - **missing_feedback** — the actual text people typed in response to "What was missing?" (only shown in the JSON response, not the text format — it's freeform content, not a count)
-  - **tried_example** — unique visitors who clicked one of the "Try a real API" quick-start buttons (per-example breakdown isn't in `/api/stats`, but is queryable directly: `redis.get("activity:tried_example:petstore")` etc.)
+  - **tried_sample** / **tried_example** — orphaned: the "Try with sample spec" button and the "Try a real API" quick-start buttons that used to trigger these were deliberately removed from the UI (a sample is now auto-loaded on page load instead, and there's no dedicated "real API" entry point). The tracking code in `api/track.ts`/`api/stats.ts` is still there and still valid — it just has nothing left to call it, so these will stay frozen at whatever count they were at removal. Left in rather than torn out since nothing asked for its removal; revisit if this becomes actually confusing to read in the stats output.
 
   Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned / N tried sample / N thumbs up / N thumbs down / N missing-feedback notes / N tried real API example` readout.
 

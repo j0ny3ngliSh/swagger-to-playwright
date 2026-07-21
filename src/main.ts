@@ -8,32 +8,17 @@ import { highlightSpec, highlightTs } from "./highlight";
 
 inject();
 
-// ── Real API examples ─────────────────────────────────────────────────────────
-// Small, real, publicly documented specs — chosen to actually load fast and stay
-// browsable (GitHub's own spec is 12.8MB / 800+ endpoints, so it's deliberately not
-// one of these; Notion stands in as a real Bearer-auth API instead).
-
-type RealExampleId = "petstore" | "notion" | "spotify";
-
-const REAL_EXAMPLES: { id: RealExampleId; label: string; url: string }[] = [
-  { id: "petstore", label: "Try PetStore API", url: "https://petstore3.swagger.io/api/v3/openapi.json" },
-  { id: "notion", label: "Try Notion API", url: "https://api.apis.guru/v2/specs/notion.com/1.0.0/openapi.yaml" },
-  { id: "spotify", label: "Try Spotify API", url: "https://api.apis.guru/v2/specs/spotify.com/1.0.0/openapi.yaml" },
-];
-
 // ── Activity tracking ─────────────────────────────────────────────────────────
 
 type TrackEvent =
   | "visit"
   | "generated"
   | "copied"
-  | "tried_sample"
   | "thumbs_up"
   | "thumbs_down"
-  | "fetched_url"
-  | "tried_example";
+  | "fetched_url";
 
-function logActivity(event: TrackEvent, method?: "button" | "selection" | RealExampleId) {
+function logActivity(event: TrackEvent, method?: "button" | "selection") {
   fetch("/api/track", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -51,29 +36,22 @@ app.innerHTML = `
   <main class="wrap">
     <h1>OpenAPI → Playwright</h1>
     <p class="tagline">Generate ready-to-run API tests from your OpenAPI specification.</p>
-    <p class="subtitle">Upload your Swagger/OpenAPI file, select an endpoint, and get Playwright tests generated from your API contract.</p>
-
-    <p class="real-api-label">Try a real API</p>
-    <div class="real-api-row" id="real-api-row">
-      ${REAL_EXAMPLES.map((ex) => `<button type="button" class="real-api-btn" data-example="${ex.id}">${ex.label}</button>`).join("")}
-    </div>
 
     <div class="card">
       <label class="upload">
         <input type="file" id="file-input" accept=".yaml,.yml,.json" />
         <span id="upload-label">Upload openapi.yaml / .json</span>
       </label>
-      <div class="or">or fetch from URL</div>
+      <div class="or or--url">or fetch from URL</div>
       <div class="url-row">
         <input type="url" id="url-input" placeholder="https://api.example.com/openapi.yaml" />
         <button id="url-btn" type="button">Fetch</button>
       </div>
-      <div class="or">or paste it below</div>
+      <div class="or or--paste">or paste it below</div>
       <div class="editor-wrap">
         <pre id="spec-highlight" class="editor-highlight" aria-hidden="true"></pre>
         <textarea id="spec-input" class="editor-input" spellcheck="false" placeholder="Paste your OpenAPI/Swagger spec here (YAML or JSON)..."></textarea>
       </div>
-      <button id="sample-btn" type="button" class="sample-btn">Try with sample spec</button>
     </div>
 
     <div class="card" id="endpoint-card" hidden>
@@ -123,10 +101,8 @@ const fileInput = document.querySelector<HTMLInputElement>("#file-input")!;
 const uploadLabel = document.querySelector<HTMLSpanElement>("#upload-label")!;
 const specInput = document.querySelector<HTMLTextAreaElement>("#spec-input")!;
 const specHighlight = document.querySelector<HTMLPreElement>("#spec-highlight")!;
-const sampleBtn = document.querySelector<HTMLButtonElement>("#sample-btn")!;
 const urlInput = document.querySelector<HTMLInputElement>("#url-input")!;
 const urlBtn = document.querySelector<HTMLButtonElement>("#url-btn")!;
-const realApiRow = document.querySelector<HTMLDivElement>("#real-api-row")!;
 const endpointCard = document.querySelector<HTMLDivElement>("#endpoint-card")!;
 const endpointSelect = document.querySelector<HTMLSelectElement>("#endpoint-select")!;
 const outputCard = document.querySelector<HTMLDivElement>("#output-card")!;
@@ -324,38 +300,6 @@ urlBtn.addEventListener("click", async () => {
     urlBtn.disabled = false;
     urlBtn.textContent = "Fetch";
   }
-});
-
-// ── Real API quick-start buttons ────────────────────────────────────────────────
-
-realApiRow.querySelectorAll<HTMLButtonElement>(".real-api-btn").forEach((btn) => {
-  const id = btn.dataset.example as RealExampleId;
-  const example = REAL_EXAMPLES.find((ex) => ex.id === id)!;
-
-  btn.addEventListener("click", async () => {
-    const original = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "Loading…";
-    urlInput.value = example.url;
-    try {
-      await fetchAndLoadSpec(example.url, `Generated test · ${example.label.replace("Try ", "")}`);
-      logActivity("tried_example", example.id);
-    } catch (e: any) {
-      showError(`Couldn't load ${example.label}: ${e.message ?? e}`);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = original;
-    }
-  });
-});
-
-// ── Sample spec ───────────────────────────────────────────────────────────────
-
-sampleBtn.addEventListener("click", () => {
-  setSpecValue(SAMPLE_SPEC);
-  outputLabel.textContent = "Generated test · sample spec";
-  loadSpecText(SAMPLE_SPEC);
-  logActivity("tried_sample");
 });
 
 // ── Endpoint select ───────────────────────────────────────────────────────────
