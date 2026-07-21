@@ -70,6 +70,7 @@ export function exampleForSchema(spec: any, schema: any, depth = 0): any {
       if (resolved.format === "uuid") return "00000000-0000-0000-0000-000000000000";
       return "string";
     case "integer":
+      return 1;
     case "number":
       return 0;
     case "boolean":

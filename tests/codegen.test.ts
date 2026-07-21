@@ -19,7 +19,7 @@ describe("generateTest: GET /pets (no auth, query params, object response)", () 
   });
 
   it("builds a params object from query parameters, marking optional ones", () => {
-    expect(output).toContain(`limit: 0, // optional`);
+    expect(output).toContain(`limit: 1, // optional`);
     expect(output).toContain(`status: "available",`);
   });
 
