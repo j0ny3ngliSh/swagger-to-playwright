@@ -311,11 +311,17 @@ endpointSelect.addEventListener("change", () => {
 // ── Copy ──────────────────────────────────────────────────────────────────────
 
 copyBtn.addEventListener("click", async () => {
-  await navigator.clipboard.writeText(outputCode.textContent ?? "");
+  // Track and show feedback immediately — before the clipboard write so mobile
+  // browsers that throw on clipboard.writeText still register the copy intent.
   logActivity("copied", "button");
   const original = copyBtn.textContent;
   copyBtn.textContent = "Copied!";
   window.setTimeout(() => (copyBtn.textContent = original), 1200);
+  try {
+    await navigator.clipboard.writeText(outputCode.textContent ?? "");
+  } catch {
+    // Clipboard API unavailable or permission denied — button feedback already shown above.
+  }
 });
 
 outputCode.addEventListener("copy", () => {
