@@ -40,7 +40,7 @@ npx tsc --noEmit  # type-check only
 ## Current known gaps (next tasks)
 
 - [ ] Wire Resend/ConvertKit to `api/subscribe.ts` — emails captured but not sent
-- [ ] Add GitHub Actions CI (`vitest run` + `tsc --noEmit` on push)
+- [x] Add GitHub Actions CI running `vitest run` on push (`.github/workflows/test.yml`) — `tsc --noEmit` isn't wired into CI yet, only run manually
 - [ ] Rate-limit `/api/subscribe` (one attempt per IP per hour)
 - [ ] `oneOf`/`anyOf` support in `resolveSchema`
 - [ ] Auth scheme type awareness (currently always emits `Bearer`)

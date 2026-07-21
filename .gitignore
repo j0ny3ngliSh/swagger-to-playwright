@@ -25,3 +25,5 @@ dist-ssr
 .vercel
 .env*
 AUDIT.md
+IMPROVEMENTS.md
+METRICS.md
