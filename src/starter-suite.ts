@@ -344,7 +344,10 @@ export function generateStarterSuite(spec: any, op: OperationInfo): string {
       payload: happyPayload,
       assertionLines: code
         ? [`    expect(response.status()).toBe(${code});`]
-        : ["    // Placeholder: expected status when unauthenticated isn't documented in the spec."],
+        : [
+            `    // 401 or 403 aren't documented in the spec — asserting it's not a success response.`,
+            `    expect(response.ok()).toBeFalsy();`,
+          ],
     });
   }
 
