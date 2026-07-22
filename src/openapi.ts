@@ -81,14 +81,27 @@ export function listOperations(spec: any): OperationInfo[] {
     for (const method of HTTP_METHODS) {
       const op = pathItem[method];
       if (!op) continue;
+
+      const allParams = [...pathLevelParams, ...(op.parameters || [])];
+
+      // Swagger 2.0 uses `in: "body"` parameters instead of a top-level requestBody.
+      // Lift body params out so the rest of the pipeline can treat them uniformly.
+      const bodyParam = allParams.find((p: any) => p.in === "body");
+      const filteredParams = allParams.filter((p: any) => p.in !== "body");
+      const requestBody =
+        op.requestBody ??
+        (bodyParam?.schema
+          ? { content: { "application/json": { schema: bodyParam.schema } } }
+          : undefined);
+
       ops.push({
         key: `${method.toUpperCase()} ${path}`,
         method,
         path,
         operationId: op.operationId,
         summary: op.summary,
-        parameters: [...pathLevelParams, ...(op.parameters || [])],
-        requestBody: op.requestBody,
+        parameters: filteredParams,
+        requestBody,
         responses: op.responses,
         security: op.security || spec.security,
       });
@@ -98,9 +111,15 @@ export function listOperations(spec: any): OperationInfo[] {
 }
 
 export function getBaseUrl(spec: any): string {
-  const servers = spec.servers;
-  if (servers && servers.length > 0 && servers[0].url) {
-    return servers[0].url;
+  // OpenAPI 3.0
+  if (spec.servers?.length > 0 && spec.servers[0].url) {
+    return spec.servers[0].url;
+  }
+  // Swagger 2.0
+  if (spec.host) {
+    const scheme = spec.schemes?.[0] ?? "https";
+    const basePath = spec.basePath ?? "";
+    return `${scheme}://${spec.host}${basePath}`;
   }
   return "";
 }

@@ -86,10 +86,11 @@ describe("generateTest: edge cases", () => {
     parameters: [{ name: "id", in: "path", required: true }],
   };
 
-  it("falls back to a placeholder for a path param with no schema/example", () => {
+  it("uses a default string value for a path param with no schema/example", () => {
     const output = generateTest({}, baseOp);
-    // '<id>' is URL-encoded since it's substituted into a path segment.
-    expect(output).toContain("'/widgets/%3Cid%3E'");
+    // Swagger 2.0 params have type directly on the param object (no schema wrapper).
+    // A bare param with no type info resolves to "string" rather than the old <id> placeholder.
+    expect(output).toContain("'/widgets/string'");
   });
 
   it("uses a quoted literal path (no template) when the spec has no servers", () => {

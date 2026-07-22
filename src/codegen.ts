@@ -82,7 +82,10 @@ export function exampleForSchema(spec: any, schema: any, depth = 0): any {
 
 export function paramExample(spec: any, param: any): any {
   if (param.example !== undefined) return param.example;
-  return exampleForSchema(spec, param.schema);
+  // OpenAPI 3.0 wraps type info in a nested schema object.
+  // Swagger 2.0 puts type/format/enum directly on the parameter — fall back to
+  // treating the param itself as the schema when no schema wrapper exists.
+  return exampleForSchema(spec, param.schema ?? param);
 }
 
 export function buildPath(spec: any, op: OperationInfo): { pathExpr: string; queryParams: any[] } {
@@ -103,8 +106,11 @@ export function firstSuccessResponse(op: OperationInfo): { code: string; schema?
   const codes = Object.keys(responses).filter((c) => /^2\d\d$/.test(c));
   if (codes.length === 0) return undefined;
   const code = codes[0];
-  const content = responses[code]?.content?.["application/json"];
-  return { code, schema: content?.schema };
+  const response = responses[code];
+  // OpenAPI 3.0: schema is nested under content["application/json"]
+  // Swagger 2.0: schema is directly on the response object
+  const schema = response?.content?.["application/json"]?.schema ?? response?.schema;
+  return { code, schema };
 }
 
 export function generateTest(spec: any, op: OperationInfo): string {

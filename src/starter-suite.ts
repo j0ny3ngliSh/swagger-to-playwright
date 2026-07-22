@@ -92,7 +92,8 @@ function invalidPathParamValue(schema: any): string {
 // meaningful to violate.
 function findTypedQueryParam(spec: any, queryParams: any[]): { param: any; type: string } | undefined {
   for (const p of queryParams) {
-    const schema = resolveSchema(spec, p.schema);
+    // Swagger 2.0 puts type directly on the param; OpenAPI 3.0 wraps it in p.schema
+    const schema = resolveSchema(spec, p.schema ?? p);
     if (schema?.enum) continue;
     if (["integer", "number", "boolean"].includes(schema?.type)) {
       return { param: p, type: schema.type };
@@ -103,7 +104,8 @@ function findTypedQueryParam(spec: any, queryParams: any[]): { param: any; type:
 
 function findEnumQueryParam(spec: any, queryParams: any[]): { param: any; enumValues: any[] } | undefined {
   for (const p of queryParams) {
-    const schema = resolveSchema(spec, p.schema);
+    // Swagger 2.0 puts enum directly on the param; OpenAPI 3.0 wraps it in p.schema
+    const schema = resolveSchema(spec, p.schema ?? p);
     if (Array.isArray(schema?.enum) && schema.enum.length > 0) {
       return { param: p, enumValues: schema.enum };
     }
@@ -214,7 +216,7 @@ export function generateStarterSuite(spec: any, op: OperationInfo): string {
   });
 
   if (paginationParam) {
-    const paginationSchema = resolveSchema(spec, paginationParam.schema);
+    const paginationSchema = resolveSchema(spec, paginationParam.schema ?? paginationParam);
     const validValue =
       paginationSchema?.type === "integer" || paginationSchema?.type === "number"
         ? 2
@@ -245,7 +247,7 @@ export function generateStarterSuite(spec: any, op: OperationInfo): string {
         : [UNDOCUMENTED_STATUS_COMMENT],
     });
 
-    const targetSchema = resolveSchema(spec, targetParam.schema);
+    const targetSchema = resolveSchema(spec, targetParam.schema ?? targetParam);
     if (pathParamHasMeaningfulFormat(targetSchema)) {
       const badCode = documentedStatus(op, ["400", "422"]);
       cases.push({
