@@ -263,19 +263,20 @@ export function generateStarterSuite(spec: any, op: OperationInfo): string {
   }
 
   if (requiredBodyFields.length > 0 && happyPayload && typeof happyPayload === "object") {
-    const missingField = requiredBodyFields[0];
-    const partialPayload = { ...happyPayload };
-    delete partialPayload[missingField];
     const code = documentedStatus(op, ["400", "422"]);
-    cases.push({
-      category: CATEGORY_INPUT,
-      title: `returns ${code ?? "an error"} when '${missingField}' is missing`,
-      includeAuth: hasAuth,
-      pathExpr: happyPath,
-      queryParams: happyQuery,
-      payload: partialPayload,
-      assertionLines: code ? [`    expect(response.status()).toBe(${code});`] : [UNDOCUMENTED_STATUS_COMMENT],
-    });
+    for (const missingField of requiredBodyFields) {
+      const partialPayload = { ...happyPayload };
+      delete partialPayload[missingField];
+      cases.push({
+        category: CATEGORY_INPUT,
+        title: `returns ${code ?? "an error"} when '${missingField}' is missing`,
+        includeAuth: hasAuth,
+        pathExpr: happyPath,
+        queryParams: happyQuery,
+        payload: partialPayload,
+        assertionLines: code ? [`    expect(response.status()).toBe(${code});`] : [UNDOCUMENTED_STATUS_COMMENT],
+      });
+    }
   }
 
   if (typedProp && happyPayload && typeof happyPayload === "object") {
