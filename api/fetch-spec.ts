@@ -31,6 +31,49 @@ function isBlockedHost(hostname: string): boolean {
   return false;
 }
 
+function validateUrl(url: URL): string | undefined {
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return "Only http/https URLs are allowed";
+  }
+  if (isBlockedHost(url.hostname)) {
+    return "This host is not allowed";
+  }
+  return undefined;
+}
+
+const MAX_REDIRECTS = 5;
+const MAX_BYTES = 2_000_000;
+
+// Follows redirects manually so every hop — not just the original URL — gets checked
+// against the SSRF guard. A plain `fetch()` follows redirects transparently, which
+// would let a request to an allowed host 302 its way to a private/internal address
+// without ever being re-validated.
+async function safeFetch(startUrl: URL): Promise<Response> {
+  let current = startUrl;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const res = await fetch(current.toString(), {
+      headers: { Accept: "application/json, application/yaml, text/yaml, text/plain, */*" },
+      signal: AbortSignal.timeout(10_000),
+      redirect: "manual",
+    });
+
+    const isRedirect = res.status >= 300 && res.status < 400;
+    if (!isRedirect) return res;
+
+    const location = res.headers.get("location");
+    if (!location) throw new Error("Redirect response had no Location header");
+
+    const next = new URL(location, current);
+    const rejection = validateUrl(next);
+    if (rejection) throw new Error(`Redirect target rejected: ${rejection} (${next.hostname})`);
+
+    current = next;
+  }
+
+  throw new Error("Too many redirects");
+}
+
 export default async function handler(req: Request): Promise<Response> {
   const rawUrl = new URL(req.url).searchParams.get("url");
   if (!rawUrl) return new Response("Missing url param", { status: 400 });
@@ -42,20 +85,12 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response("Invalid URL", { status: 400 });
   }
 
-  if (target.protocol !== "http:" && target.protocol !== "https:") {
-    return new Response("Only http/https URLs are allowed", { status: 400 });
-  }
-
-  if (isBlockedHost(target.hostname)) {
-    return new Response("This host is not allowed", { status: 400 });
-  }
+  const rejection = validateUrl(target);
+  if (rejection) return new Response(rejection, { status: 400 });
 
   let res: Response;
   try {
-    res = await fetch(target.toString(), {
-      headers: { Accept: "application/json, application/yaml, text/yaml, text/plain, */*" },
-      signal: AbortSignal.timeout(10_000),
-    });
+    res = await safeFetch(target);
   } catch (e: any) {
     return new Response(`Fetch failed: ${e?.message ?? "unknown error"}`, { status: 502 });
   }
@@ -64,8 +99,13 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(`Upstream returned ${res.status}`, { status: 502 });
   }
 
+  const contentLength = res.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_BYTES) {
+    return new Response("Spec too large (max 2 MB)", { status: 413 });
+  }
+
   const text = await res.text();
-  if (text.length > 2_000_000) {
+  if (text.length > MAX_BYTES) {
     return new Response("Spec too large (max 2 MB)", { status: 413 });
   }
 
