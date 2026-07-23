@@ -1,6 +1,6 @@
 # OpenAPI → Playwright
 
-Generate ready-to-run API tests from your OpenAPI specification. No accounts, no login, no billing for users. It's a static frontend plus a handful of tiny serverless endpoints for activity tracking and an optional email signup (see below) — there's no account system, but email addresses from the "get updates" box are stored (see Email capture).
+Generate ready-to-run API tests from your OpenAPI specification. No accounts, no login, no billing for users. It's a static frontend plus a handful of tiny serverless endpoints — there's no account system, but email addresses from the "get updates" box are stored (see Email capture).
 
 ## Flow
 
@@ -50,7 +50,7 @@ npm install
 npm run dev
 ```
 
-The `/api/track` and `/api/stats` endpoints (see below) need `KV_REST_API_URL` / `KV_REST_API_TOKEN` env vars to work — pull them with `vercel env pull` if you need activity tracking locally. Everything else (the actual tool) works without them.
+The `/api/track` and `/api/stats` endpoints need `KV_REST_API_URL` / `KV_REST_API_TOKEN` env vars to work — pull them with `vercel env pull` if you need activity tracking locally. Everything else (the actual tool) works without them.
 
 ## Why Vite
 
@@ -60,24 +60,6 @@ The core tool is a static, no-framework-needed page by design (the serverless fu
 - **A real npm dependency for YAML.** OpenAPI specs are usually YAML, not JSON, so the tool needs `js-yaml`. Vite lets that be a normal `import` instead of a CDN `<script>` tag or a hand-vendored file.
 
 The output is still plain static files (`npm run build` → `dist/`), deployable anywhere for free — Vercel, Netlify, GitHub Pages, or a plain static host.
-
-## Activity tracking
-
-Two layers, both free:
-
-- **Vercel Web Analytics** (`inject()` in `src/main.ts`) — pageview/visitor trends in the Vercel dashboard. Custom events (e.g. "did they click Copy?") are a Pro-plan-only feature there, so this layer is trend-watching only, not the funnel below.
-- **Self-hosted funnel counter** (`api/track.ts`, `api/stats.ts`, backed by free-tier Upstash Redis) — tracks a real funnel of unique people, not raw event counts:
-  - **visitors** — anyone who loaded the page, deduped by a SHA-256 hash of their IP (the raw IP is never stored — hashed server-side in `api/track.ts` before touching Redis). Note: this undercounts distinct people behind a shared/NAT'd IP (offices, some mobile carriers) and overcounts people whose IP changes between visits — it's a reasonable proxy, not exact.
-  - **generated** — unique visitors (by that same IP hash) who generated at least one test
-  - **copied** — unique visitors who copied a test (via the Copy button or manual select-all)
-  - **returned** — visitors seen on 2+ separate visits, even within the same day (not gated by calendar day)
-  - **thumbs_up** / **thumbs_down** — unique visitors who rated the generated test with the 👍/👎 feedback widget
-  - **missing_feedback** — the actual text people typed in response to "What was missing?" (only shown in the JSON response, not the text format — it's freeform content, not a count)
-  - **tried_sample** / **tried_example** — orphaned: the "Try with sample spec" button and the "Try a real API" quick-start buttons that used to trigger these were deliberately removed from the UI (a sample is now auto-loaded on page load instead, and there's no dedicated "real API" entry point). The tracking code in `api/track.ts`/`api/stats.ts` is still there and still valid — it just has nothing left to call it, so these will stay frozen at whatever count they were at removal. Left in rather than torn out since nothing asked for its removal; revisit if this becomes actually confusing to read in the stats output.
-
-  Check it anytime at `/api/stats` (JSON), or `/api/stats?format=text` for a plain `N visitors / N generated / N copied / N returned / N tried sample / N thumbs up / N thumbs down / N missing-feedback notes / N tried real API example` readout.
-
-This exists because pageviews alone don't tell you if the tool is actually useful — the funnel does.
 
 ## Email capture
 
