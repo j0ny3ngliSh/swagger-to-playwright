@@ -481,6 +481,73 @@ pre {
   color: #ffb4b4;
 }
 
+/* ── Daily stats view (stats.html) ─────────────────────────────────────────── */
+
+.stats-note {
+  color: #9aa0aa;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.stats-note strong {
+  color: #e6e6e6;
+}
+
+.stats-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stats-chart-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stats-chart-label {
+  flex: 0 0 180px;
+  font-size: 0.85rem;
+  color: #cfd3da;
+}
+
+.stats-chart-total {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.stats-chart-svg-wrap {
+  overflow-x: auto;
+}
+
+.stats-table-wrap {
+  overflow-x: auto;
+}
+
+.stats-table {
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 6px 10px;
+  text-align: right;
+  border-bottom: 1px solid #262b35;
+}
+
+.stats-table th:first-child,
+.stats-table td:first-child {
+  text-align: left;
+  color: #9aa0aa;
+}
+
+.stats-table th {
+  color: #9aa0aa;
+  font-weight: 600;
+}
+
 /* ── Responsive / mobile ───────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {

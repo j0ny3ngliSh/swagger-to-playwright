@@ -1,4 +1,5 @@
 import { redis, getIp, hashIp, createLimiter, checkRateLimit, rateLimitedResponse } from "./_lib/rate-limit";
+import { saddDaily, utcDateString } from "./_lib/daily";
 
 const VALID_EVENTS = new Set([
   "visit", "generated", "copied", "tried_sample",
@@ -44,29 +45,38 @@ export default async function handler(req: Request): Promise<Response> {
   const { allowed, reset } = await checkRateLimit(trackLimiter, id);
   if (!allowed) return rateLimitedResponse(reset);
 
+  const today = utcDateString();
+
   await redis.sadd("visitors:all", id);
+  await saddDaily(`visitors:${today}`, id);
 
   if (event === "visit") {
     const visitCount = await redis.incr(`visitor-visits:${id}`);
     if (visitCount >= 2) {
       await redis.sadd("visitors:returned", id);
+      await saddDaily(`visitors:returned:${today}`, id);
     }
   } else if (event === "generated") {
     await redis.sadd("visitors:generated", id);
     await redis.incr("activity:generated");
+    await saddDaily(`visitors:generated:${today}`, id);
   } else if (event === "copied") {
     await redis.sadd("visitors:copied", id);
+    await saddDaily(`visitors:copied:${today}`, id);
     if (method && VALID_METHODS.has(method)) {
       await redis.incr(`activity:copied:${method}`);
     }
   } else if (event === "tried_sample") {
     await redis.sadd("visitors:tried_sample", id);
+    await saddDaily(`visitors:tried_sample:${today}`, id);
   } else if (event === "thumbs_up") {
     await redis.sadd("visitors:thumbs_up", id);
     await redis.incr("feedback:thumbs_up");
+    await saddDaily(`visitors:thumbs_up:${today}`, id);
   } else if (event === "thumbs_down") {
     await redis.sadd("visitors:thumbs_down", id);
     await redis.incr("feedback:thumbs_down");
+    await saddDaily(`visitors:thumbs_down:${today}`, id);
   } else if (event === "fetched_url") {
     await redis.sadd("visitors:fetched_url", id);
   } else if (event === "tried_example") {
@@ -77,6 +87,7 @@ export default async function handler(req: Request): Promise<Response> {
   } else if (event === "suite_downloaded") {
     await redis.sadd("visitors:suite_downloaded", id);
     await redis.incr("activity:suite_downloaded");
+    await saddDaily(`visitors:suite_downloaded:${today}`, id);
     if (typeof endpointCount === "number" && Number.isInteger(endpointCount) && endpointCount > 0) {
       await redis.incrby("activity:suite_downloaded:endpoints_total", Math.min(endpointCount, 5000));
     }
