@@ -6,6 +6,7 @@ export interface OperationInfo {
   path: string;
   operationId?: string;
   summary?: string;
+  tags?: string[];
   parameters: any[];
   requestBody?: any;
   responses?: any;
@@ -29,6 +30,13 @@ export function isOpenApiSpec(spec: any): boolean {
   if (typeof spec.openapi === "string" && /^\d/.test(spec.openapi)) return true;
   if (typeof spec.swagger === "string" && /^\d/.test(spec.swagger)) return true;
   return false;
+}
+
+// The version string (e.g. "3.0.0", "2.0") — used for lightweight analytics only,
+// never the spec body itself.
+export function getSpecVersion(spec: any): string | undefined {
+  if (!spec || typeof spec !== "object") return undefined;
+  return spec.openapi ?? spec.swagger;
 }
 
 export function resolveRef(spec: any, ref: string): any {
@@ -100,6 +108,7 @@ export function listOperations(spec: any): OperationInfo[] {
         path,
         operationId: op.operationId,
         summary: op.summary,
+        tags: op.tags,
         parameters: filteredParams,
         requestBody,
         responses: op.responses,

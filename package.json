@@ -19,6 +19,7 @@
   "dependencies": {
     "@upstash/redis": "^1.38.0",
     "@vercel/analytics": "^2.0.1",
-    "js-yaml": "^5.2.1"
+    "js-yaml": "^5.2.1",
+    "jszip": "^3.10.1"
   }
 }

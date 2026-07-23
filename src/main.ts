@@ -1,8 +1,10 @@
 import "./style.css";
+import JSZip from "jszip";
 import { inject } from "@vercel/analytics";
 import type { OperationInfo } from "./openapi";
-import { parseSpec, listOperations, isOpenApiSpec } from "./openapi";
+import { parseSpec, listOperations, isOpenApiSpec, getSpecVersion } from "./openapi";
 import { generateStarterSuite } from "./starter-suite";
+import { buildSuiteFiles } from "./zip-suite";
 import { SAMPLE_SPEC } from "./sample-spec";
 import { highlightSpec, highlightTs, escapeHtml } from "./highlight";
 
@@ -23,6 +25,14 @@ function logActivity(event: TrackEvent, method?: "button" | "selection") {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ event, method }),
+  }).catch(() => {});
+}
+
+function logSuiteDownload(endpointCount: number, specVersion: string | undefined) {
+  fetch("/api/track", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ event: "suite_downloaded", endpointCount, specVersion }),
   }).catch(() => {});
 }
 
@@ -57,6 +67,13 @@ app.innerHTML = `
     <div class="card" id="endpoint-card" hidden>
       <label for="endpoint-select">Endpoint</label>
       <select id="endpoint-select"></select>
+    </div>
+
+    <div class="card suite-card" id="suite-card" hidden>
+      <div class="suite-row">
+        <span id="suite-count-label" class="suite-count-label"></span>
+        <button id="suite-download-btn" type="button" class="suite-download-btn"></button>
+      </div>
     </div>
 
     <div class="card" id="output-card" hidden>
@@ -105,6 +122,9 @@ const urlInput = document.querySelector<HTMLInputElement>("#url-input")!;
 const urlBtn = document.querySelector<HTMLButtonElement>("#url-btn")!;
 const endpointCard = document.querySelector<HTMLDivElement>("#endpoint-card")!;
 const endpointSelect = document.querySelector<HTMLSelectElement>("#endpoint-select")!;
+const suiteCard = document.querySelector<HTMLDivElement>("#suite-card")!;
+const suiteCountLabel = document.querySelector<HTMLSpanElement>("#suite-count-label")!;
+const suiteDownloadBtn = document.querySelector<HTMLButtonElement>("#suite-download-btn")!;
 const outputCard = document.querySelector<HTMLDivElement>("#output-card")!;
 const outputLabel = document.querySelector<HTMLSpanElement>("#output-label")!;
 const outputCode = document.querySelector<HTMLPreElement>("#output-code")!;
@@ -134,6 +154,7 @@ function showError(message: string) {
   errorBox.textContent = message;
   errorBox.hidden = false;
   endpointCard.hidden = true;
+  suiteCard.hidden = true;
   outputCard.hidden = true;
   feedbackCard.hidden = true;
 }
@@ -237,6 +258,12 @@ function populateEndpoints(track = true) {
     .map((op, i) => `<option value="${i}">${escapeHtml(op.method.toUpperCase())} ${escapeHtml(op.path)}</option>`)
     .join("");
   endpointCard.hidden = false;
+
+  suiteCountLabel.textContent = `${operations.length} endpoint${operations.length === 1 ? "" : "s"} detected`;
+  suiteDownloadBtn.textContent = `Download full suite (${operations.length})`;
+  suiteDownloadBtn.disabled = false;
+  suiteCard.hidden = false;
+
   renderOutput(0, track);
 }
 
@@ -308,6 +335,37 @@ urlBtn.addEventListener("click", async () => {
 
 endpointSelect.addEventListener("change", () => {
   renderOutput(Number(endpointSelect.value));
+});
+
+// ── Full-suite ZIP download ───────────────────────────────────────────────────
+
+suiteDownloadBtn.addEventListener("click", async () => {
+  if (operations.length === 0) return;
+  const original = suiteDownloadBtn.textContent;
+  suiteDownloadBtn.disabled = true;
+  suiteDownloadBtn.textContent = "Zipping…";
+  try {
+    const files = buildSuiteFiles(spec, operations);
+    const zip = new JSZip();
+    for (const file of files) zip.file(file.path, file.content);
+    const blob = await zip.generateAsync({ type: "blob" });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "playwright-api-tests.zip";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    logSuiteDownload(operations.length, getSpecVersion(spec));
+  } catch (e: any) {
+    showError(`Couldn't build the zip: ${e.message ?? e}`);
+  } finally {
+    suiteDownloadBtn.disabled = false;
+    suiteDownloadBtn.textContent = original;
+  }
 });
 
 // ── Copy ──────────────────────────────────────────────────────────────────────
