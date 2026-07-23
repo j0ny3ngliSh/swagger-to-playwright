@@ -10,6 +10,9 @@ const { mockCheckRateLimit, mockRedis, mockGetIp, mockHashIp } = vi.hoisted(() =
     incr: vi.fn().mockResolvedValue(1),
     incrby: vi.fn().mockResolvedValue(1),
     hincrby: vi.fn().mockResolvedValue(1),
+    // Used by the real (unmocked) api/_lib/daily.ts, which api/track.ts calls
+    // into for per-day bucketing — this file only mocks _lib/rate-limit.
+    expire: vi.fn().mockResolvedValue(1),
   },
   mockGetIp: vi.fn().mockReturnValue("1.2.3.4"),
   mockHashIp: vi.fn().mockResolvedValue("hashed-id"),
