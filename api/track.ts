@@ -8,9 +8,14 @@ const redis = new Redis({
 const VALID_EVENTS = new Set([
   "visit", "generated", "copied", "tried_sample",
   "thumbs_up", "thumbs_down", "fetched_url", "tried_example",
+  "suite_downloaded",
 ]);
 const VALID_METHODS = new Set(["button", "selection"]);
 const VALID_EXAMPLES = new Set(["petstore", "notion", "spotify"]);
+// Bounds the Redis hash of spec versions to plausible OpenAPI/Swagger version
+// strings only — anything else (or missing) buckets under "other" so a client
+// can't grow the hash with arbitrary keys.
+const SPEC_VERSION_PATTERN = /^[\w.-]{1,20}$/;
 
 function getIp(req: Request): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
@@ -37,14 +42,14 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 
-  let body: { event?: string; method?: string };
+  let body: { event?: string; method?: string; endpointCount?: number; specVersion?: string };
   try {
     body = await req.json();
   } catch {
     return new Response("Invalid JSON", { status: 400 });
   }
 
-  const { event, method } = body;
+  const { event, method, endpointCount, specVersion } = body;
   if (!event || !VALID_EVENTS.has(event)) {
     return new Response("Invalid event", { status: 400 });
   }
@@ -81,6 +86,15 @@ export default async function handler(req: Request): Promise<Response> {
     if (method && VALID_EXAMPLES.has(method)) {
       await redis.incr(`activity:tried_example:${method}`);
     }
+  } else if (event === "suite_downloaded") {
+    await redis.sadd("visitors:suite_downloaded", id);
+    await redis.incr("activity:suite_downloaded");
+    if (typeof endpointCount === "number" && Number.isInteger(endpointCount) && endpointCount > 0) {
+      await redis.incrby("activity:suite_downloaded:endpoints_total", Math.min(endpointCount, 5000));
+    }
+    const versionKey =
+      typeof specVersion === "string" && SPEC_VERSION_PATTERN.test(specVersion) ? specVersion : "other";
+    await redis.hincrby("activity:suite_downloaded:versions", versionKey, 1);
   }
 
   return new Response(null, { status: 204 });

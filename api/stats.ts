@@ -23,6 +23,9 @@ export default async function handler(req: Request): Promise<Response> {
     thumbsDown,
     missingFeedbackRaw,
     triedExample,
+    suiteDownloaded,
+    suiteDownloadedEndpointsTotal,
+    suiteDownloadedVersions,
   ] = await Promise.all([
     redis.scard("visitors:all"),
     redis.scard("visitors:generated"),
@@ -35,6 +38,9 @@ export default async function handler(req: Request): Promise<Response> {
     redis.scard("visitors:thumbs_down"),
     redis.lrange("feedback:missing", 0, -1),
     redis.scard("visitors:tried_example"),
+    redis.scard("visitors:suite_downloaded"),
+    redis.get<number>("activity:suite_downloaded:endpoints_total"),
+    redis.hgetall<Record<string, number>>("activity:suite_downloaded:versions"),
   ]);
 
   const missingFeedback: MissingFeedbackEntry[] = (missingFeedbackRaw ?? []).map((entry) =>
@@ -53,11 +59,14 @@ export default async function handler(req: Request): Promise<Response> {
     thumbs_down: thumbsDown,
     missing_feedback: missingFeedback,
     tried_example: triedExample,
+    suite_downloaded: suiteDownloaded,
+    suite_downloaded_endpoints_total: suiteDownloadedEndpointsTotal ?? 0,
+    suite_downloaded_versions: suiteDownloadedVersions ?? {},
   };
 
   const url = new URL(req.url);
   if (url.searchParams.get("format") === "text") {
-    const text = `${visitors} visitors\n${generated} generated\n${copied} copied\n${returned} returned\n${triedSample} tried sample\n${thumbsUp} thumbs up\n${thumbsDown} thumbs down\n${missingFeedback.length} missing-feedback notes\n${triedExample} tried real API example\n`;
+    const text = `${visitors} visitors\n${generated} generated\n${copied} copied\n${returned} returned\n${triedSample} tried sample\n${thumbsUp} thumbs up\n${thumbsDown} thumbs down\n${missingFeedback.length} missing-feedback notes\n${triedExample} tried real API example\n${suiteDownloaded} suite downloads (${suiteDownloadedEndpointsTotal ?? 0} endpoints total)\n`;
     return new Response(text, { headers: { "content-type": "text/plain" } });
   }
 
