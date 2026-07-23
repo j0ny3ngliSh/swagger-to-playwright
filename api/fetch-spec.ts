@@ -8,6 +8,13 @@
 // the edge runtime this function runs on. Blocking literal private targets stops the
 // overwhelming majority of casual SSRF probing; full rebinding protection is a
 // follow-up if this proxy ever handles more sensitive traffic.
+//
+// Also rate-limited (unlike a plain analytics event, each call makes an outbound
+// fetch on our behalf) so this can't be scripted into a free anonymous HTTP proxy.
+import { getIp, hashIp, createLimiter, checkRateLimit, rateLimitedResponse } from "./_lib/rate-limit";
+
+const fetchSpecLimiter = createLimiter("fetch-spec", 5, "1 m");
+
 function isBlockedHost(hostname: string): boolean {
   const h = hostname.toLowerCase();
   if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local")) return true;
@@ -75,6 +82,10 @@ async function safeFetch(startUrl: URL): Promise<Response> {
 }
 
 export default async function handler(req: Request): Promise<Response> {
+  const id = await hashIp(getIp(req));
+  const { allowed, reset } = await checkRateLimit(fetchSpecLimiter, id);
+  if (!allowed) return rateLimitedResponse(reset);
+
   const rawUrl = new URL(req.url).searchParams.get("url");
   if (!rawUrl) return new Response("Missing url param", { status: 400 });
 

@@ -1,9 +1,4 @@
-import { Redis } from "@upstash/redis";
-
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL!,
-  token: process.env.KV_REST_API_TOKEN!,
-});
+import { redis, getIp, hashIp, createLimiter, checkRateLimit, rateLimitedResponse } from "./_lib/rate-limit";
 
 const VALID_EVENTS = new Set([
   "visit", "generated", "copied", "tried_sample",
@@ -17,19 +12,9 @@ const VALID_EXAMPLES = new Set(["petstore", "notion", "spotify"]);
 // can't grow the hash with arbitrary keys.
 const SPEC_VERSION_PATTERN = /^[\w.-]{1,20}$/;
 
-function getIp(req: Request): string {
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  if (forwardedFor) return forwardedFor.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "unknown";
-}
-
-// Hashed rather than stored raw, so no actual IP addresses sit in Redis.
-async function hashIp(ip: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+// Generous — this fires on ordinary page interactions (visit, copy, generate,
+// etc.), not just suite downloads, so it only needs to catch scripted floods.
+const trackLimiter = createLimiter("track", 20, "1 m");
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
@@ -55,6 +40,9 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const id = await hashIp(getIp(req));
+
+  const { allowed, reset } = await checkRateLimit(trackLimiter, id);
+  if (!allowed) return rateLimitedResponse(reset);
 
   await redis.sadd("visitors:all", id);
 

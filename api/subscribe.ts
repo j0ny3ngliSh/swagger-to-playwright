@@ -1,15 +1,11 @@
-import { Redis } from "@upstash/redis";
-
 // TODO: Replace Redis storage with a dedicated email provider (Resend, ConvertKit, Mailchimp)
 // when you're ready to send actual emails. For now, emails land in the same
 // Upstash Redis instance used for activity tracking — check with:
 //   redis.smembers("subscribers:emails")
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL!,
-  token: process.env.KV_REST_API_TOKEN!,
-});
+import { redis, getIp, hashIp, createLimiter, checkRateLimit, rateLimitedResponse } from "./_lib/rate-limit";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const subscribeLimiter = createLimiter("subscribe", 1, "1 h");
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
@@ -18,6 +14,10 @@ export default async function handler(req: Request): Promise<Response> {
       { status: 405, headers: { "content-type": "text/plain" } },
     );
   }
+
+  const id = await hashIp(getIp(req));
+  const { allowed, reset } = await checkRateLimit(subscribeLimiter, id);
+  if (!allowed) return rateLimitedResponse(reset);
 
   let body: { email?: unknown };
   try {

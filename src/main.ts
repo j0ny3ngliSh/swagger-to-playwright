@@ -6,6 +6,7 @@ import { parseSpec, listOperations, isOpenApiSpec, getSpecVersion } from "./open
 import { generateStarterSuite } from "./starter-suite";
 import { buildSuiteFiles } from "./zip-suite";
 import { computeSpecSignature, isSuiteAlreadyDownloaded } from "./suite-download-state";
+import { MAX_SPEC_CHARS, isSpecTooLarge } from "./spec-size-guard";
 import { SAMPLE_SPEC } from "./sample-spec";
 import { highlightSpec, highlightTs, escapeHtml } from "./highlight";
 
@@ -237,6 +238,12 @@ specInput.addEventListener("scroll", () => {
 // ── Spec loading ──────────────────────────────────────────────────────────────
 
 function loadSpecText(text: string, track = true) {
+  if (isSpecTooLarge(text)) {
+    showError(
+      `This spec is too large (${Math.round(text.length / 1000)}KB, max ${MAX_SPEC_CHARS / 1000}KB) — try a smaller/trimmed spec.`,
+    );
+    return;
+  }
   try {
     const parsed = parseSpec(text);
     if (!isOpenApiSpec(parsed)) {
