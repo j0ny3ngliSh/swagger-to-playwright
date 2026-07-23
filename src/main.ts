@@ -5,6 +5,7 @@ import type { OperationInfo } from "./openapi";
 import { parseSpec, listOperations, isOpenApiSpec, getSpecVersion } from "./openapi";
 import { generateStarterSuite } from "./starter-suite";
 import { buildSuiteFiles } from "./zip-suite";
+import { computeSpecSignature, isSuiteAlreadyDownloaded } from "./suite-download-state";
 import { SAMPLE_SPEC } from "./sample-spec";
 import { highlightSpec, highlightTs, escapeHtml } from "./highlight";
 
@@ -147,6 +148,10 @@ const emailFeedback = document.querySelector<HTMLDivElement>("#email-feedback")!
 
 let spec: any = null;
 let operations: OperationInfo[] = [];
+// Signature of the spec at the moment of the last successful suite download — null
+// means nothing has been downloaded yet this session. Compared against the current
+// spec each time a new one loads, to decide whether "Download full suite" re-enables.
+let lastDownloadedSpecSignature: string | null = null;
 
 // ── Error / clear ─────────────────────────────────────────────────────────────
 
@@ -260,8 +265,13 @@ function populateEndpoints(track = true) {
   endpointCard.hidden = false;
 
   suiteCountLabel.textContent = `${operations.length} endpoint${operations.length === 1 ? "" : "s"} detected`;
-  suiteDownloadBtn.textContent = `Download full suite (${operations.length})`;
-  suiteDownloadBtn.disabled = false;
+  if (isSuiteAlreadyDownloaded(spec, lastDownloadedSpecSignature)) {
+    suiteDownloadBtn.textContent = "✓ Suite downloaded";
+    suiteDownloadBtn.disabled = true;
+  } else {
+    suiteDownloadBtn.textContent = `Download full suite (${operations.length})`;
+    suiteDownloadBtn.disabled = false;
+  }
   suiteCard.hidden = false;
 
   renderOutput(0, track);
@@ -341,7 +351,8 @@ endpointSelect.addEventListener("change", () => {
 
 suiteDownloadBtn.addEventListener("click", async () => {
   if (operations.length === 0) return;
-  const original = suiteDownloadBtn.textContent;
+  // Disabling synchronously (before the await) is what blocks a second click from
+  // starting a second zip while this one is still generating.
   suiteDownloadBtn.disabled = true;
   suiteDownloadBtn.textContent = "Zipping…";
   try {
@@ -360,11 +371,15 @@ suiteDownloadBtn.addEventListener("click", async () => {
     URL.revokeObjectURL(url);
 
     logSuiteDownload(operations.length, getSpecVersion(spec));
+
+    // Stays disabled: re-enables only once populateEndpoints sees a spec whose
+    // signature no longer matches this one (a genuinely new/changed spec).
+    lastDownloadedSpecSignature = computeSpecSignature(spec);
+    suiteDownloadBtn.textContent = "✓ Suite downloaded";
   } catch (e: any) {
-    showError(`Couldn't build the zip: ${e.message ?? e}`);
-  } finally {
     suiteDownloadBtn.disabled = false;
-    suiteDownloadBtn.textContent = original;
+    suiteDownloadBtn.textContent = `Download full suite (${operations.length})`;
+    showError(`Couldn't build the zip: ${e.message ?? e}`);
   }
 });
 
