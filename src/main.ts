@@ -7,6 +7,7 @@ import { generateStarterSuite } from "./starter-suite";
 import { buildSuiteFiles } from "./zip-suite";
 import { computeSpecSignature, isSuiteAlreadyDownloaded } from "./suite-download-state";
 import { MAX_SPEC_CHARS, isSpecTooLarge } from "./spec-size-guard";
+import { normalizeSpecUrl, looksLikeHtml } from "./spec-url";
 import { SAMPLE_SPEC } from "./sample-spec";
 import { highlightSpec, highlightTs, escapeHtml } from "./highlight";
 
@@ -304,7 +305,10 @@ fileInput.addEventListener("change", () => {
   if (!file) return;
   uploadLabel.textContent = file.name;
   outputLabel.textContent = "Generated test";
-  file.text().then((text) => loadSpecText(text));
+  file.text().then((text) => {
+    setSpecValue(text);
+    loadSpecText(text);
+  });
 });
 
 // ── Textarea (paste / type) ───────────────────────────────────────────────────
@@ -323,9 +327,15 @@ specInput.addEventListener("input", () => {
 // ── URL fetch (shared by the manual Fetch button and the real-API quick-start buttons) ─
 
 async function fetchAndLoadSpec(url: string, outputLabelText: string): Promise<string> {
-  const res = await fetch(`/api/fetch-spec?url=${encodeURIComponent(url)}`);
+  const normalizedUrl = normalizeSpecUrl(url);
+  const res = await fetch(`/api/fetch-spec?url=${encodeURIComponent(normalizedUrl)}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const text = await res.text();
+  if (looksLikeHtml(text)) {
+    throw new Error(
+      "That URL returned an HTML page, not the raw spec file — for GitHub links, use the file's \"Raw\" button/URL.",
+    );
+  }
   setSpecValue(text);
   outputLabel.textContent = outputLabelText;
   loadSpecText(text);
