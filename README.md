@@ -13,7 +13,9 @@ Select an endpoint
       ↓
 Generate a Starter Suite of Playwright tests
       ↓
-Copy → Done
+Copy a single test → Done
+   or
+Download the full suite — every endpoint, zipped → Done
 ```
 
 ## The Starter Suite
